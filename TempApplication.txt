@@ -1,11 +1,10 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using BLL.Abstractions;
 using Core.Entities;
-using Core.ViewModels;
 using EFCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
@@ -18,7 +17,7 @@ namespace EducationPortalConsole
         
         private readonly IConfiguration _configuration;
         private readonly IUserService _userService;
-        private UserViewModel _currentUser;
+        private User _currentUser;
         
         //Test Props
         private UserManager<User> _userManager;

@@ -62,6 +62,10 @@ namespace EFCore
                         .WithMany(u => u.UserSkills)
                         .HasForeignKey(uc => uc.UserId)
                 );
+
+            modelBuilder.Entity<Course>()
+                .HasOne(c => c.Creator)
+                .WithMany(u => u.CreatedCourses);
         }
     }
 }

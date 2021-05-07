@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Threading.Tasks;
+using AutoMapper;
 using BLL;
 using BLL.Abstractions;
 using Core.Entities;
 using DAL;
 using DAL.Abstractions;
+using EducationPortalConsole.Configurations;
 using EFCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -50,6 +52,17 @@ namespace EducationPortalConsole
                 })
                 .AddEntityFrameworkStores<EPContext>()
                 .AddDefaultTokenProviders();
+            
+            MapperConfiguration mappingConfig = new MapperConfiguration(mc =>
+            {
+                mc.AddProfile(new EFMapperProfile());
+            });
+
+            IMapper mapper = mappingConfig.CreateMapper();
+            services.AddSingleton(mapper);
+
+            services.AddTransient<IPasswordValidator<User>, EFPasswordValidator>();
+            services.AddTransient<IUserValidator<User>, EFUserValidator>();
 
             services.AddTransient<Application>();
             services.AddTransient<IUserService, UserService>();

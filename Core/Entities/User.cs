@@ -15,7 +15,9 @@ namespace Core.Entities
         public string Surname { get; set; }
 
         public ICollection<Material> Materials { get; set; }
-
+        
+        public ICollection<Course> CreatedCourses { get; set; }
+        
         public ICollection<Course> Courses { get; set; }
 
         public ICollection<UserCourse> UserCourses { get; set; }

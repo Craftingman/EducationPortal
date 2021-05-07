@@ -1,15 +1,25 @@
-﻿using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 using Core;
 using Core.Entities;
+using Core.ViewModels;
 
 namespace BLL.Abstractions
 {
     public interface IUserService
     {
-        public Task<ServiceResult> RegisterUserAsync(User user);
+        Task<ServiceResult> RegisterUserAsync(UserViewModel userShort, string password);
 
-        public Task<ServiceResult<User>> SignInUserAsync(string email, string password);
+        Task<ServiceResult<UserViewModel>> SignInUserAsync(string email, string password);
 
-        public Task<bool> HasRoleAsync(User user, string role);
+        Task<ServiceResult<bool>> HasRoleAsync(UserViewModel userShort, string role);
+
+        Task<ServiceResult<Dictionary<CourseViewModel, float>>> GetCoursesAsync(int userId, string searchStr);
+        
+        Task<ServiceResult<Dictionary<CourseViewModel, float>>> GetInProgressCoursesAsync(int userId,  string searchStr);
+
+        Task<ServiceResult<IEnumerable<CourseViewModel>>> GetCreatedCoursesAsync(int userId,  string searchStr);
+        
+        Task<ServiceResult<IEnumerable<CourseViewModel>>> GetCompletedCoursesAsync(int userId,  string searchStr);
     }
 }
