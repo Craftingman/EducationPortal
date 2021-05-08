@@ -13,6 +13,8 @@ namespace EducationPortalConsole.Configurations
                 .ForMember("UserName", opt => opt.MapFrom(u => u.Email));
             CreateMap<Course, CourseViewModel>();
             CreateMap<CourseViewModel, Course>();
+            CreateMap<Skill, SkillViewModel>();
+            CreateMap<SkillViewModel, Skill>();
         }
     }
 }

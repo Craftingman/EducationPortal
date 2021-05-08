@@ -8,10 +8,10 @@ namespace Core.Entities
         [Required]
         public string Name { get; set; }
         
-        public ICollection<Course> Courses { get; set; }
+        public virtual ICollection<Course> Courses { get; set; }
         
-        public ICollection<User> Users { get; set; }
+        public virtual ICollection<User> Users { get; set; }
         
-        public ICollection<UserSkill> UserSkills { get; set; }
+        public virtual ICollection<UserSkill> UserSkills { get; set; }
     }
 }

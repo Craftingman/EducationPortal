@@ -30,7 +30,7 @@ namespace BLL
             _mapper = mapper;
         }
         
-        public async Task<ServiceResult> CreateAsync(CourseViewModel course)
+        public async Task<ServiceResult> CreateAsync(CourseViewModel courseShort, UserViewModel creator)
         {
             throw new System.NotImplementedException();
         }
@@ -53,6 +53,29 @@ namespace BLL
             catch (Exception e)
             {
                 return ServiceResult<IEnumerable<CourseViewModel>>.CreateFailure(e);
+            }
+        }
+
+        public async Task<ServiceResult<IEnumerable<SkillViewModel>>> GetCourseSkills(CourseViewModel courseShort)
+        {
+            try
+            {
+                var result = await Task.Run(() => 
+                    _courseRepository.Find(courseShort.Id));
+
+                IEnumerable<Skill> skills = result.Result.Skills;
+
+                if (result.Success)
+                {
+                    return ServiceResult<IEnumerable<SkillViewModel>>.CreateSuccessResult(
+                        _mapper.Map<IEnumerable<SkillViewModel>>(skills));
+                }
+                
+                return ServiceResult<IEnumerable<SkillViewModel>>.CreateFailure(result.Exception);
+            }
+            catch (Exception e)
+            {
+                return ServiceResult<IEnumerable<SkillViewModel>>.CreateFailure(e);
             }
         }
     }

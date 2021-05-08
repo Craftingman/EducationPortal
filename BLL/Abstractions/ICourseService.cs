@@ -8,8 +8,10 @@ namespace BLL.Abstractions
 {
     public interface ICourseService
     {
-        public Task<ServiceResult> CreateAsync(CourseViewModel course);
+        public Task<ServiceResult> CreateAsync(CourseViewModel courseShort, UserViewModel creator = null);
 
         public Task<ServiceResult<IEnumerable<CourseViewModel>>> GetCoursesAsync(string searchStr);
+
+        public Task<ServiceResult<IEnumerable<SkillViewModel>>> GetCourseSkills(CourseViewModel courseShort);
     }
 }

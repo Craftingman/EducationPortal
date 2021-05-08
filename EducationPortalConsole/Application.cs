@@ -120,65 +120,63 @@ namespace EducationPortalConsole
                 }
             }
         }
-/*
-        private void StartCourseMenu()
+
+        private void StartCoursesMenu()
         {
-            bool exitCourseMenuFlag = false;
+            bool exitCoursesMenuFlag = false;
             string searchString = "";
 
-            while (!exitCourseMenuFlag)
+            while (!exitCoursesMenuFlag)
             {
+                Console.Clear();
                 Console.Clear();
                 Console.WriteLine("--- Курсы ---");
 
-                IEnumerable<CourseViewModel> courses = _courseService.GetCoursesAsync(searchString).Result.Result;
+                List<CourseViewModel> courses = _courseService.GetCoursesAsync(searchString).Result.Result.ToList();
                 
-                if (_currentUser is null)
+                ShowCourses(courses);
+                
+                Console.WriteLine("1. Поиск");
+                Console.WriteLine("2. Выбрать курс");
+
+                if (_currentUser != null)
                 {
-                    Console.WriteLine("1. Вход");
-                    Console.WriteLine("2. Регистрация");
-                    Console.WriteLine("0. Главное Меню");
-                    
-                    switch (ValidateChoise(Console.ReadLine()))
-                    {
-                        case 0:
-                            exitCourseMenuFlag = true;
-                            break;
-                        case 1:
-                            SignIn();
-                            break;
-                        case 2:
-                            RegisterAccount();
-                            break;
-                        default:
-                            DisplayWrongInput();
-                            break;
-                    }
+                    Console.WriteLine("3. Добавить курс");
                 }
-                
-                Console.WriteLine("1. Данные аккаунта");
-                Console.WriteLine("2. Мои курсы");
-                Console.WriteLine("3. Моя статистика");
-                Console.WriteLine("4. Выход из аккаунта");
-                Console.WriteLine("0. Главное Меню");
+
+                Console.WriteLine("0. Выход");
+                Console.Write("Выберите пункт: ");
                 
                 switch (ValidateChoise(Console.ReadLine()))
                 {
                     case 0:
-                        exitAccountMenuFlag = true;
+                        exitCoursesMenuFlag = true;
                         break;
                     case 1:
-                        StartAccountDataMenu();
+                        Console.WriteLine($"Поисковая строка сейчас: \'{searchString}\'");
+                        Console.Write($"Введите часть названия курса: ");
+                        searchString = Console.ReadLine();
                         break;
                     case 2:
-                        StartUserCourseMenu();
+                        Console.Write("Введите номер курса: ");
+                        int choise = ValidateChoise(Console.ReadLine());
+                        
+                        if (choise >= 0 && choise < courses.Count)
+                        {
+                            StartCourseInfoMenu(courses[choise]);
+                            break;
+                        }
+                        
+                        Console.WriteLine("Неверный номер курса.");
+                        Thread.Sleep(800);
                         break;
                     case 3:
-                        ShowUserStatistics();
-                        break;
-                    case 4:
-                        exitAccountMenuFlag = true;
-                        _currentUser = null;
+                        if (_currentUser != null)
+                        {
+                            Console.WriteLine("2. Добавить курс");
+                            break;
+                        }
+                        DisplayWrongInput();
                         break;
                     default:
                         DisplayWrongInput();
@@ -186,7 +184,100 @@ namespace EducationPortalConsole
                 }
             }
         }
-*/
+
+        private void StartCourseInfoMenu(CourseViewModel course)
+        {
+            bool exitCourseInfoMenuFlag = false;
+
+            while (!exitCourseInfoMenuFlag)
+            {
+                Console.Clear();
+                Console.WriteLine($"--- Курс ---\n");
+                
+                if (!ShowCourseInfo(course))
+                {
+                    StartErrorMenu("Произошла ошибка", out exitCourseInfoMenuFlag);
+                }
+                
+                if (_currentUser != null)
+                {
+                    Console.WriteLine("1. Добавить в свои курсы");
+                }
+
+                bool isAdmin = _userService.HasRoleAsync(_currentUser, "admin").Result.Result;
+                bool isModer = _userService.HasRoleAsync(_currentUser, "moderator").Result.Result;
+
+                if (isAdmin || isModer)
+                {
+                    Console.WriteLine("2. Удалить");
+                }
+
+                Console.WriteLine("0. Назад");
+                Console.Write("Выберите пункт: ");
+
+                switch (ValidateChoise(Console.ReadLine()))
+                {
+                    case 0:
+                        exitCourseInfoMenuFlag = true;
+                        break;
+                    default:
+                        DisplayWrongInput();
+                        break;
+                }
+            }
+        }
+        
+        private void AddCourse()
+        {
+            bool addCourseExitFlag = false;
+
+            while (!addCourseExitFlag)
+            {
+                
+            }
+        }
+
+        private bool ShowCourseInfo(CourseViewModel course)
+        {
+            Console.WriteLine($"Название: {course.Name}\n");
+            Console.WriteLine($"Описание: {course.Description}\n");
+            
+            var result = _courseService.GetCourseSkills(course).Result;
+
+            if (result.Success)
+            {
+                Console.WriteLine($"Навыки:");
+                ShowSkills(result.Result);
+                return true;
+            }
+
+            return false;
+        }
+
+        private void ShowSkills(IEnumerable<SkillViewModel> skills)
+        {
+            Console.WriteLine();
+            int i = 0;
+            foreach (var skill in skills)
+            {
+                Console.WriteLine($"{i} - {skill.Name}");
+                i++;
+            }
+            Console.WriteLine();
+        }
+
+        private void ShowCourses(IEnumerable<CourseViewModel> courses)
+        {
+            Console.WriteLine();
+            int i = 0;
+            foreach (var course in courses)
+            {
+                Console.WriteLine($"{i}. {course.Name}\n");
+                i++;
+            }
+            Console.WriteLine();
+        }
+
         private void StartUsersMenu()
         {
             
@@ -217,7 +308,7 @@ namespace EducationPortalConsole
                     StartAccountMenu();
                     break;
                 case 2:
-                    //StartCourseMenu();
+                    StartCoursesMenu();
                     break;
                 case 3:
                     if (_userService.HasRoleAsync(_currentUser, "admin").Result.Result)

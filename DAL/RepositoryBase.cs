@@ -15,6 +15,20 @@ namespace DAL
         {
             this.EPContext = repositoryContext;
         }
+
+        public ServiceResult<T> Find(int id)
+        {
+            try
+            {
+                T result = this.EPContext.Set<T>().Find(id);
+                return ServiceResult<T>.CreateSuccessResult(result);
+            }
+            catch (Exception ex)
+            {
+                return ServiceResult<T>.CreateFailure(ex);
+            }
+        }
+
         public ServiceResult<IQueryable<T>> FindAll()
         {
             try

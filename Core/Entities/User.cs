@@ -14,16 +14,16 @@ namespace Core.Entities
         [Required]
         public string Surname { get; set; }
 
-        public ICollection<Material> Materials { get; set; }
+        public virtual ICollection<Material> Materials { get; set; }
         
-        public ICollection<Course> CreatedCourses { get; set; }
+        public virtual ICollection<Course> CreatedCourses { get; set; }
         
-        public ICollection<Course> Courses { get; set; }
+        public virtual ICollection<Course> Courses { get; set; }
 
-        public ICollection<UserCourse> UserCourses { get; set; }
+        public virtual ICollection<UserCourse> UserCourses { get; set; }
 
-        public ICollection<Skill> Skills { get; set; }
+        public virtual ICollection<Skill> Skills { get; set; }
 
-        public ICollection<UserSkill> UserSkills { get; set; }
+        public virtual ICollection<UserSkill> UserSkills { get; set; }
     }
 }

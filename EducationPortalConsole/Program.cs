@@ -38,8 +38,9 @@ namespace EducationPortalConsole
             services.AddLogging(loggerBuilder => loggerBuilder.AddNLog());
 
             services.AddDbContext<EPContext>(
-                options => options.UseSqlServer(
-                    _configuration.GetConnectionString("EducationPortal")));
+                options => options
+                    .UseLazyLoadingProxies()
+                    .UseSqlServer(_configuration.GetConnectionString("EducationPortal")));
 
             services.AddIdentity<User, IdentityRole<int>>(opts =>
                 {

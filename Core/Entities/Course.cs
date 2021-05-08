@@ -11,14 +11,14 @@ namespace Core.Entities
 
         public int? CreatorId { get; set; }
 
-        public User Creator { get; set; }
+        public virtual User Creator { get; set; }
 
-        public ICollection<Skill> Skills { get; set; }
+        public virtual ICollection<Skill> Skills { get; set; }
         
-        public ICollection<Material> Materials { get; set; }
+        public virtual ICollection<Material> Materials { get; set; }
 
-        public ICollection<User> Users { get; set; }
+        public virtual ICollection<User> Users { get; set; }
         
-        public ICollection<UserCourse> UserCourses { get; set; }
+        public virtual ICollection<UserCourse> UserCourses { get; set; }
     }
 }
