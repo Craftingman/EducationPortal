@@ -21,7 +21,7 @@ namespace BLL
 
         private readonly IMapper _mapper;
 
-        private readonly IRepositoryBase<User> _userRepository;
+        //private readonly IRepositoryBase<User> _userRepository;
 
         private readonly IUserValidator<User> _userValidator;
         
@@ -30,20 +30,20 @@ namespace BLL
         public UserService(
             UserManager<User> userManager, 
             RoleManager<IdentityRole<int>> roleManager,
-            IRepositoryBase<User> userRepository,
+            //IRepositoryBase<User> userRepository,
             IUserValidator<User> userValidator,
             IPasswordValidator<User> passwordValidator,
             IMapper mapper)
         {
             _userManager = userManager;
             _roleManager = roleManager;
-            _userRepository = userRepository;
+            //_userRepository = userRepository;
             _userValidator = userValidator;
             _passwordValidator = passwordValidator;
             _mapper = mapper;
         }
 
-        public async Task<ServiceResult> RegisterUserAsync(UserViewModel userShort, string password)
+        public async Task<ServiceResult> RegisterUserAsync(UserViewModel userShort, string password, string role)
         {
             try
             {
@@ -61,16 +61,18 @@ namespace BLL
                     return ServiceResult.CreateFailure(validateUserResult.Errors.FirstOrDefault()?.Description, 401);
                 }
 
-                var result = await _userManager.CreateAsync(user);
-                if (result.Succeeded)
+                var createResult = await _userManager.CreateAsync(user, password);
+                var addRoleResult = await _userManager.AddToRoleAsync(user, role);
+                if (createResult.Succeeded && addRoleResult.Succeeded)
                 {
                     return ServiceResult.CreateSuccessResult();
                 }
 
-                string errorString = String.Concat(result.Errors.Select(e => e.ToString()));
-                int.TryParse(result.Errors.FirstOrDefault()?.Code, out int code);
-            
-                return ServiceResult.CreateFailure(errorString, code);
+                string errorString = String.Concat(
+                    createResult.Errors.Select(e => e.ToString()),
+                    addRoleResult.Errors.Select(e => e.ToString()));
+
+                return ServiceResult.CreateFailure(errorString);
             }
             catch (Exception e)
             {
@@ -125,6 +127,22 @@ namespace BLL
                 }
             
                 bool result = await _userManager.IsInRoleAsync(user, role);
+
+                return ServiceResult<bool>.CreateSuccessResult(result);
+            }
+            catch (Exception e)
+            {
+                return ServiceResult<bool>.CreateFailure(e);
+            }
+        }
+
+        public async Task<ServiceResult<bool>> UserExists(string email)
+        {
+            try
+            {
+                User user = await Task.Run(() => _userManager.Users.FirstOrDefault(u => u.Email == email));
+
+                bool result = !(user is null);
 
                 return ServiceResult<bool>.CreateSuccessResult(result);
             }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using BLL.Abstractions;
@@ -18,6 +19,7 @@ namespace EducationPortalConsole
         
         private readonly IConfiguration _configuration;
         private readonly IUserService _userService;
+        private readonly ICourseService _courseService;
         private UserViewModel _currentUser;
         
         //Test Props
@@ -30,13 +32,15 @@ namespace EducationPortalConsole
             EPContext epContext, 
             UserManager<User> userManager, 
             RoleManager<IdentityRole<int>> roleManager,
-            IUserService userService)
+            IUserService userService,
+            ICourseService courseService)
         {
             _configuration = config;
             _epContext = epContext;
             _userManager = userManager;
             _roleManager = roleManager;
             _userService = userService;
+            _courseService = courseService;
         }
         
         //viktor.zherebnyi@nure.ua 1
@@ -64,11 +68,81 @@ namespace EducationPortalConsole
                     Console.WriteLine("1. Вход");
                     Console.WriteLine("2. Регистрация");
                     Console.WriteLine("0. Главное Меню");
+                    Console.Write("Выберите пункт: ");
                     
                     switch (ValidateChoise(Console.ReadLine()))
                     {
                         case 0:
                             exitAccountMenuFlag = true;
+                            break;
+                        case 1:
+                            SignIn();
+                            break;
+                        case 2:
+                            RegisterAccount();
+                            break;
+                        default:
+                            DisplayWrongInput();
+                            break;
+                    }
+
+                    continue;
+                }
+                
+                Console.WriteLine("1. Данные аккаунта");
+                Console.WriteLine("2. Мои курсы");
+                Console.WriteLine("3. Моя статистика");
+                Console.WriteLine("4. Выход из аккаунта");
+                Console.WriteLine("0. Главное Меню");
+                Console.Write("Выберите пункт: ");
+                
+                switch (ValidateChoise(Console.ReadLine()))
+                {
+                    case 0:
+                        exitAccountMenuFlag = true;
+                        break;
+                    case 1:
+                        StartAccountDataMenu();
+                        break;
+                    case 2:
+                        StartUserCourseMenu();
+                        break;
+                    case 3:
+                        ShowUserStatistics();
+                        break;
+                    case 4:
+                        exitAccountMenuFlag = true;
+                        _currentUser = null;
+                        break;
+                    default:
+                        DisplayWrongInput();
+                        break;
+                }
+            }
+        }
+/*
+        private void StartCourseMenu()
+        {
+            bool exitCourseMenuFlag = false;
+            string searchString = "";
+
+            while (!exitCourseMenuFlag)
+            {
+                Console.Clear();
+                Console.WriteLine("--- Курсы ---");
+
+                IEnumerable<CourseViewModel> courses = _courseService.GetCoursesAsync(searchString).Result.Result;
+                
+                if (_currentUser is null)
+                {
+                    Console.WriteLine("1. Вход");
+                    Console.WriteLine("2. Регистрация");
+                    Console.WriteLine("0. Главное Меню");
+                    
+                    switch (ValidateChoise(Console.ReadLine()))
+                    {
+                        case 0:
+                            exitCourseMenuFlag = true;
                             break;
                         case 1:
                             SignIn();
@@ -112,12 +186,7 @@ namespace EducationPortalConsole
                 }
             }
         }
-
-        private void StartCourseMenu()
-        {
-            
-        }
-
+*/
         private void StartUsersMenu()
         {
             
@@ -131,13 +200,13 @@ namespace EducationPortalConsole
             Console.WriteLine("1. Аккаунт");
             Console.WriteLine("2. Курсы");
             
-            if (_userService.HasRoleAsync(_currentUser, "admin").Result)
+            if (_userService.HasRoleAsync(_currentUser, "admin").Result.Result)
             {
                 Console.WriteLine("3. Пользователи");
             }
 
             Console.WriteLine("0. Выход");
-            Console.WriteLine("Выберите пункт: ");
+            Console.Write("Выберите пункт: ");
             
             switch (ValidateChoise(Console.ReadLine()))
             {
@@ -148,10 +217,10 @@ namespace EducationPortalConsole
                     StartAccountMenu();
                     break;
                 case 2:
-                    StartCourseMenu();
+                    //StartCourseMenu();
                     break;
                 case 3:
-                    if (_userService.HasRoleAsync(_currentUser, "admin").Result)
+                    if (_userService.HasRoleAsync(_currentUser, "admin").Result.Result)
                     {
                         StartUsersMenu();
                         break;
@@ -181,7 +250,87 @@ namespace EducationPortalConsole
 
         private void RegisterAccount()
         {
+            bool registeExitFlag = false;
+
+            while (!registeExitFlag)
+            {
+                Console.Clear();
             
+                Console.WriteLine("Введите данные для регистрации\n");
+            
+                Console.Write("E-Mail*: ");
+                string email = Console.ReadLine();
+                
+                Console.Write("Имя*: ");
+                string name = Console.ReadLine();
+                
+                Console.Write("Фамилия*: ");
+                string surname = Console.ReadLine();
+            
+                Console.Write("Пароль*: ");
+                string password = Console.ReadLine();
+                
+                Console.Write("Повторите пароль*: ");
+                string passwordRep = Console.ReadLine();
+
+                List<string> errorMessages = new List<string>();
+                
+                if (!Regex.IsMatch(email, _configuration["ValidationPatterns:User:Email"]))
+                {
+                    errorMessages.Add("Неверный E-Mail.");
+                }
+                
+                if (!Regex.IsMatch(password, _configuration["ValidationPatterns:User:Password"]))
+                {
+                    errorMessages.Add("Неверный пароль. Длина пароля должна составлять не меньше 8 символов, содержать в себе цифры и буквы латинского алфавита.");
+                }
+                
+                if (!Regex.IsMatch(name, _configuration["ValidationPatterns:User:Name"]))
+                {
+                    errorMessages.Add("Неверное имя. Имя должно начинаться с большой буквы и состоять из символов русского или латинского алфавита.");
+                }
+                
+                if (!Regex.IsMatch(surname, _configuration["ValidationPatterns:User:Surname"]))
+                {
+                    errorMessages.Add("Неверная фамилия. Фамилия должна начинаться с большой буквы и состоять из символов русского или латинского алфавита.");
+                }
+                
+                if (password != passwordRep)
+                {
+                    errorMessages.Add("Пароли не совпадают.");
+                }
+
+                if (_userService.UserExists(email).Result.Result)
+                {
+                    errorMessages.Add("Пользователь с таким E-Mail уже зарегистрирован.");
+                }
+
+                if (errorMessages.Any())
+                {
+                    Console.Clear();
+                    StartErrorMenu(errorMessages, out registeExitFlag);
+                    continue;
+                }
+
+                UserViewModel user = new UserViewModel()
+                {
+                    Email = email,
+                    Name = name,
+                    Surname = surname
+                };
+
+                var result = _userService.RegisterUserAsync(user, password).Result;
+
+                if (result.Success)
+                {
+                    Console.Clear();
+                    Console.WriteLine("Успешная регистрация.");
+                    Thread.Sleep(800);
+                    return;
+                }
+            
+                StartErrorMenu("Произошла ошибка. Попробуйте позже.", out registeExitFlag);
+            }
         }
 
         private void SignIn()
@@ -192,7 +341,7 @@ namespace EducationPortalConsole
             {
                 Console.Clear();
             
-                Console.WriteLine("Введите дааные для входа\n");
+                Console.WriteLine("Введите данные для входа\n");
             
                 Console.Write("E-Mail: ");
                 string email = Console.ReadLine();
@@ -207,27 +356,48 @@ namespace EducationPortalConsole
                     _currentUser = result.Result;
                     Console.Clear();
                     Console.WriteLine("Успешная авторизация.");
-                    Thread.Sleep(500);
+                    Thread.Sleep(800);
                     return;
                 }
             
+                StartErrorMenu("Неправильный логин или пароль.", out singnInExitFlag);
+            }
+        }
+
+        private void StartErrorMenu(string errorMessage, out bool outerExitFlag)
+        {
+            bool errorMenuExitFlag = false;
+            outerExitFlag = false;
+
+            while (!errorMenuExitFlag)
+            {
                 Console.Clear();
-                Console.WriteLine(
-                    "Неправильный логин или пароль.\n1. Попробовать заново\n0. Назад\nВыберите пункт: ");
+                Console.WriteLine($"{errorMessage}\n");
+                Console.WriteLine("1. Попробовать заново");
+                Console.WriteLine("0. Назад");
+                Console.Write("\nВыберите пункт: ");
+                
                 int choise = ValidateChoise(Console.ReadLine());
 
                 switch (choise)
                 {
                     case 0:
-                        singnInExitFlag = true;
+                        outerExitFlag = true;
+                        errorMenuExitFlag = true; 
                         break;
                     case 1:
+                        errorMenuExitFlag = true; 
                         break;
                     default:
                         DisplayWrongInput();
                         break;
                 }
             }
+        }
+
+        private void StartErrorMenu(IEnumerable<string> errorMessages, out bool outerExitFlag)
+        {
+            StartErrorMenu(String.Join("\n", errorMessages), out outerExitFlag);
         }
 
         private void DisplayWrongInput()

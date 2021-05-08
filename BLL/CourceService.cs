@@ -2,10 +2,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AutoMapper;
 using BLL.Abstractions;
 using Core;
 using Core.Entities;
+using Core.ViewModels;
 using DAL.Abstractions;
+using Microsoft.Extensions.Configuration;
 
 namespace BLL
 {
@@ -13,31 +16,44 @@ namespace BLL
     {
         private readonly IRepositoryBase<Course> _courseRepository;
 
-        public CourseService(IRepositoryBase<Course> courseRepository)
+        private readonly IConfiguration _configuration;
+
+        private readonly IMapper _mapper;
+
+        public CourseService(
+            IRepositoryBase<Course> courseRepository,
+            IConfiguration configuration,
+            IMapper mapper)
         {
             _courseRepository = courseRepository;
+            _configuration = configuration;
+            _mapper = mapper;
         }
         
-        public async Task<ServiceResult> CreateAsync(Course course)
+        public async Task<ServiceResult> CreateAsync(CourseViewModel course)
         {
             throw new System.NotImplementedException();
         }
 
-        public async Task<ServiceResult<IEnumerable<Course>>> GetAllAsync()
+        public async Task<ServiceResult<IEnumerable<CourseViewModel>>> GetCoursesAsync(string searchStr = "")
         {
-            var result = _courseRepository.FindAll();
-
-            if (result.Success)
+            try
             {
-                return ServiceResult<IEnumerable<Course>>.CreateSuccessResult(result.Result.ToList());
+                var result = await Task.Run(() => 
+                    _courseRepository.FindByCondition(c => c.Name.Contains(searchStr)));
+
+                if (result.Success)
+                {
+                    return ServiceResult<IEnumerable<CourseViewModel>>.CreateSuccessResult(
+                        _mapper.Map<IEnumerable<CourseViewModel>>(result.Result.ToList()));
+                }
+                
+                return ServiceResult<IEnumerable<CourseViewModel>>.CreateFailure(result.Exception);
             }
-
-            return ServiceResult<IEnumerable<Course>>.CreateFailure(result.Exception);
-        }
-
-        public async Task<ServiceResult<IEnumerable<Course>>> FindAsync()
-        {
-            throw new System.NotImplementedException();
+            catch (Exception e)
+            {
+                return ServiceResult<IEnumerable<CourseViewModel>>.CreateFailure(e);
+            }
         }
     }
 }

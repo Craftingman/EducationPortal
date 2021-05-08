@@ -9,7 +9,8 @@ namespace EducationPortalConsole.Configurations
         public EFMapperProfile()
         {
             CreateMap<User, UserViewModel>();
-            CreateMap<User, UserViewModel>();
+            CreateMap<UserViewModel, User>()
+                .ForMember("UserName", opt => opt.MapFrom(u => u.Email));
             CreateMap<Course, CourseViewModel>();
             CreateMap<CourseViewModel, Course>();
         }

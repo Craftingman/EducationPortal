@@ -21,7 +21,7 @@ namespace BLL
         {
             List<IdentityError> errors = new List<IdentityError>();
  
-            if (!Regex.IsMatch(password, _configuration["ValidationPatterns:UserEmail"]))
+            if (!Regex.IsMatch(password, _configuration["ValidationPatterns:User:Password"]))
             {
                 errors.Add(new IdentityError
                 {

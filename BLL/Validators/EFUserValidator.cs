@@ -20,7 +20,7 @@ namespace BLL
         {
             List<IdentityError> errors = new List<IdentityError>();
  
-            if (!Regex.IsMatch(user.Email.ToLower(), _configuration["ValidationPatterns:UserEmail"])) 
+            if (!Regex.IsMatch(user.Email.ToLower(), _configuration["ValidationPatterns:User:Email"])) 
             {
                 errors.Add(new IdentityError
                 {
