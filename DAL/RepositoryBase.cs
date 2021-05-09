@@ -23,7 +23,7 @@ namespace DAL
             try
             {
                 T result = await this.EPContext.Set<T>().FindAsync(id);
-                EPContext.Entry(result).State = EntityState.Detached;
+                //EPContext.Entry(result).State = EntityState.Detached;
                 
                 return ServiceResult<T>.CreateSuccessResult(result);
             }

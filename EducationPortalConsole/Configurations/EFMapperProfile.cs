@@ -22,6 +22,12 @@ namespace EducationPortalConsole.Configurations
                 opt.MapFrom(m => MapMaterialType(m));
             });
             CreateMap<MaterialViewModel, Material>();
+            CreateMap<Book, BookViewModel>();
+            CreateMap<BookViewModel, Book>();
+            CreateMap<Article, ArticleViewModel>();
+            CreateMap<ArticleViewModel, Article>();
+            CreateMap<Video, VideoViewModel>();
+            CreateMap<VideoViewModel, Video>();
         }
 
         private string MapMaterialType(Material m)

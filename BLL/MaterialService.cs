@@ -66,13 +66,13 @@ namespace BLL
 
                 if (materialType == typeof(BookViewModel))
                 { 
-                    material = _mapper.Map<Book>(materialShort);
+                    material = _mapper.Map<Book>((BookViewModel)materialShort);
                 } else if (materialType == typeof(ArticleViewModel))
                 { 
-                    material = _mapper.Map<Article>(materialShort);
+                    material = _mapper.Map<Article>((ArticleViewModel)materialShort);
                 } else if (materialType == typeof(VideoViewModel))
                 { 
-                    material = _mapper.Map<Video>(materialShort);
+                    material = _mapper.Map<Video>((VideoViewModel)materialShort);
                 }
                 else
                 {

@@ -7,11 +7,11 @@ namespace Core.Entities
     {
         [Required]
         public string Name { get; set; }
-        
-        public virtual ICollection<Course> Courses { get; set; }
-        
-        public virtual ICollection<User> Users { get; set; }
-        
-        public virtual ICollection<UserSkill> UserSkills { get; set; }
+
+        public virtual ICollection<Course> Courses { get; set; } = new List<Course>();
+
+        public virtual ICollection<User> Users { get; set; } = new List<User>();
+
+        public virtual ICollection<UserSkill> UserSkills { get; set; } = new List<UserSkill>();
     }
 }

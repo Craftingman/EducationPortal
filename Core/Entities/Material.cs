@@ -10,9 +10,9 @@ namespace Core.Entities
         
         [Required]
         public string MaterialURL { get; set; }
-        
+
         public virtual ICollection<Course> Courses { get; set; }
-        
-        public virtual ICollection<User> Users { get; set; }
+
+        public virtual ICollection<User> Users { get; set; } = new List<User>();
     }
 }

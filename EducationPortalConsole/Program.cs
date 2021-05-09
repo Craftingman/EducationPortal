@@ -69,6 +69,7 @@ namespace EducationPortalConsole
             services.AddTransient<IUserService, UserService>();
             services.AddTransient<IMaterialService, MaterialService>();
             services.AddTransient<ICourseService, CourseService>();
+            services.AddTransient<ISkillService, SkillService>();
             services.AddTransient<IRepositoryBase<Course>, RepositoryBase<Course>>();
             services.AddTransient<IRepositoryBase<Material>, RepositoryBase<Material>>();
             services.AddTransient<IRepositoryBase<Skill>, RepositoryBase<Skill>>();

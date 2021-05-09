@@ -13,12 +13,12 @@ namespace Core.Entities
 
         public virtual User Creator { get; set; }
 
-        public virtual ICollection<Skill> Skills { get; set; }
-        
-        public virtual ICollection<Material> Materials { get; set; }
+        public virtual ICollection<Skill> Skills { get; set; } = new List<Skill>();
 
-        public virtual ICollection<User> Users { get; set; }
-        
-        public virtual ICollection<UserCourse> UserCourses { get; set; }
+        public virtual ICollection<Material> Materials { get; set; } = new List<Material>();
+
+        public virtual ICollection<User> Users { get; set; } = new List<User>();
+
+        public virtual ICollection<UserCourse> UserCourses { get; set; } = new List<UserCourse>();
     }
 }

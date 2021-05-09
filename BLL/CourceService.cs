@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -16,16 +17,24 @@ namespace BLL
     {
         private readonly IRepositoryBase<Course> _courseRepository;
 
+        private readonly IRepositoryBase<Material> _materialRepository;
+
+        private readonly IRepositoryBase<Skill> _skillRepository;
+
         private readonly IConfiguration _configuration;
 
         private readonly IMapper _mapper;
 
         public CourseService(
             IRepositoryBase<Course> courseRepository,
+            IRepositoryBase<Material> materialRepository,
+            IRepositoryBase<Skill>skillRepository,
             IConfiguration configuration,
             IMapper mapper)
         {
             _courseRepository = courseRepository;
+            _materialRepository = materialRepository;
+            _skillRepository = skillRepository;
             _configuration = configuration;
             _mapper = mapper;
         }
@@ -117,10 +126,11 @@ namespace BLL
             {
                 var result = await _courseRepository.FindAsync(courseShort.Id);
 
-                IEnumerable<Skill> skills = result.Result.Skills;
-
                 if (result.Success)
                 {
+                    Course course = result.Result;
+                    IEnumerable<Skill> skills = course.Skills.ToList();
+                    
                     return ServiceResult<IEnumerable<SkillViewModel>>.CreateSuccessResult(
                         _mapper.Map<IEnumerable<SkillViewModel>>(skills));
                 }
@@ -164,12 +174,12 @@ namespace BLL
 
             try
             {
-                Course course = _mapper.Map<Course>(courseShort);
-
-                var result = _courseRepository.Update(course);
-
+                var result = await _courseRepository.FindAsync(courseShort.Id);
                 if (result.Success)
                 {
+                    result.Result.Name = courseShort.Name;
+                    result.Result.Description = courseShort.Description;
+                    
                     var saveResult = await _courseRepository.SaveAsync();
                     if (saveResult.Success)
                     {
@@ -186,24 +196,166 @@ namespace BLL
             }
         }
 
-        public async Task<ServiceResult> AddMaterialAsync(MaterialViewModel materialShort)
+        public async Task<ServiceResult> AddMaterialAsync(CourseViewModel courseShort, MaterialViewModel materialShort)
         {
-            throw new NotImplementedException();
+            if (materialShort == null)
+            {
+                return ServiceResult.CreateFailure("Material is null.");
+            }
+            if (courseShort == null)
+            {
+                return ServiceResult.CreateFailure("Course is null.");
+            }
+            
+            try
+            {
+                var courseResult = await _courseRepository.FindAsync(courseShort.Id);
+                var materialResult =  await _materialRepository.FindAsync(materialShort.Id);
+
+                if (!courseResult.Success || !materialResult.Success)
+                {
+                    return ServiceResult.CreateFailure("Database error.");
+                }
+
+                ICollection<Material> courseMaterials = courseResult.Result.Materials;
+                courseMaterials.Add(materialResult.Result);
+                
+                _courseRepository.Update(courseResult.Result);
+                
+                var saveResult = await _courseRepository.SaveAsync();
+                if (saveResult.Success)
+                {
+                    return ServiceResult.CreateSuccessResult();
+                }
+                
+                return ServiceResult.CreateFailure("Database error.");
+            }
+            catch (Exception e)
+            {
+                return ServiceResult.CreateFailure(e);
+            }
         }
 
-        public async Task<ServiceResult> RemoveMaterialAsync(MaterialViewModel materialShort)
+        public async Task<ServiceResult> RemoveMaterialAsync(CourseViewModel courseShort, MaterialViewModel materialShort)
         {
-            throw new NotImplementedException();
+            if (materialShort == null)
+            {
+                return ServiceResult.CreateFailure("Material is null.");
+            }
+            if (courseShort == null)
+            {
+                return ServiceResult.CreateFailure("Course is null.");
+            }
+            
+            try
+            {
+                var courseResult = await _courseRepository.FindAsync(courseShort.Id);
+                var materialResult =  await _materialRepository.FindAsync(materialShort.Id);
+
+                if (!courseResult.Success || !materialResult.Success)
+                {
+                    return ServiceResult.CreateFailure("Database error.");
+                }
+                
+                courseResult.Result.Materials
+                    .Remove(courseResult.Result.Materials
+                        .FirstOrDefault(m => m.Id == materialResult.Result.Id));
+
+                _courseRepository.Update(courseResult.Result);
+                
+                var saveResult = await _courseRepository.SaveAsync();
+                if (saveResult.Success)
+                {
+                    return ServiceResult.CreateSuccessResult();
+                }
+                
+                return ServiceResult.CreateFailure("Database error.");
+            }
+            catch (Exception e)
+            {
+                return ServiceResult.CreateFailure(e);
+            }
         }
 
-        public async Task<ServiceResult> AddSkillAsync(SkillViewModel materialShort)
+        public async Task<ServiceResult> AddSkillAsync(CourseViewModel courseShort, SkillViewModel skillShort)
         {
-            throw new NotImplementedException();
+            if (skillShort == null)
+            {
+                return ServiceResult.CreateFailure("Material is null.");
+            }
+            if (courseShort == null)
+            {
+                return ServiceResult.CreateFailure("Course is null.");
+            }
+            
+            try
+            {
+                var courseResult = await _courseRepository.FindAsync(courseShort.Id);
+                var skillResult =  await _skillRepository.FindAsync(skillShort.Id);
+
+                if (!courseResult.Success || !skillResult.Success)
+                {
+                    return ServiceResult.CreateFailure("Database error.");
+                }
+
+                ICollection<Skill> courseSkills = courseResult.Result.Skills;
+                courseSkills.Add(skillResult.Result);
+                
+                _courseRepository.Update(courseResult.Result);
+                
+                var saveResult = await _courseRepository.SaveAsync();
+                if (saveResult.Success)
+                {
+                    return ServiceResult.CreateSuccessResult();
+                }
+                
+                return ServiceResult.CreateFailure("Database error.");
+            }
+            catch (Exception e)
+            {
+                return ServiceResult.CreateFailure(e);
+            }
         }
 
-        public async Task<ServiceResult> RemoveSkillAsync(SkillViewModel materialShort)
+        public async Task<ServiceResult> RemoveSkillAsync(CourseViewModel courseShort, SkillViewModel skillShort)
         {
-            throw new NotImplementedException();
+            if (skillShort == null)
+            {
+                return ServiceResult.CreateFailure("Material is null.");
+            }
+            if (courseShort == null)
+            {
+                return ServiceResult.CreateFailure("Course is null.");
+            }
+            
+            try
+            {
+                var courseResult = await _courseRepository.FindAsync(courseShort.Id);
+                var skillResult =  await _skillRepository.FindAsync(skillShort.Id);
+
+                if (!courseResult.Success || !skillResult.Success)
+                {
+                    return ServiceResult.CreateFailure("Database error.");
+                }
+
+                courseResult.Result.Skills
+                    .Remove(courseResult.Result.Skills
+                        .FirstOrDefault(m => m.Id == skillResult.Result.Id));
+
+                _courseRepository.Update(courseResult.Result);
+                
+                var saveResult = await _courseRepository.SaveAsync();
+                if (saveResult.Success)
+                {
+                    return ServiceResult.CreateSuccessResult();
+                }
+                
+                return ServiceResult.CreateFailure("Database error.");
+            }
+            catch (Exception e)
+            {
+                return ServiceResult.CreateFailure(e);
+            }
         }
     }
 }
