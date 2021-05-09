@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Threading.Tasks;
 using Core;
 using DAL.Abstractions;
 using EFCore;
@@ -16,11 +18,11 @@ namespace DAL
             this.EPContext = repositoryContext;
         }
 
-        public ServiceResult<T> Find(int id)
+        public async Task<ServiceResult<T>> FindAsync(int id)
         {
             try
             {
-                T result = this.EPContext.Set<T>().Find(id);
+                T result = await this.EPContext.Set<T>().FindAsync(id);
                 return ServiceResult<T>.CreateSuccessResult(result);
             }
             catch (Exception ex)
@@ -29,28 +31,28 @@ namespace DAL
             }
         }
 
-        public ServiceResult<IQueryable<T>> FindAll()
+        public async Task<ServiceResult<IEnumerable<T>>> FindAllAsync()
         {
             try
             {
-                IQueryable<T> result = this.EPContext.Set<T>().AsNoTracking();
-                return ServiceResult<IQueryable<T>>.CreateSuccessResult(result);
+                IEnumerable<T> result = await this.EPContext.Set<T>().AsNoTracking().ToListAsync();
+                return ServiceResult<IEnumerable<T>>.CreateSuccessResult(result);
             }
             catch (Exception ex)
             {
-                return ServiceResult<IQueryable<T>>.CreateFailure(ex);
+                return ServiceResult<IEnumerable<T>>.CreateFailure(ex);
             }
         }
-        public ServiceResult<IQueryable<T>> FindByCondition(Expression<Func<T, bool>> expression)
+        public async Task<ServiceResult<IEnumerable<T>>> FindByConditionAsync(Expression<Func<T, bool>> expression)
         {
             try
             {
-                IQueryable<T> result = this.EPContext.Set<T>().Where(expression).AsNoTracking();
-                return ServiceResult<IQueryable<T>>.CreateSuccessResult(result);
+                IEnumerable<T> result = await this.EPContext.Set<T>().Where(expression).AsNoTracking().ToListAsync();
+                return ServiceResult<IEnumerable<T>>.CreateSuccessResult(result);
             }
             catch (Exception ex)
             {
-                return ServiceResult<IQueryable<T>>.CreateFailure(ex);
+                return ServiceResult<IEnumerable<T>>.CreateFailure(ex);
             }
         }
         public ServiceResult Create(T entity)
@@ -87,6 +89,19 @@ namespace DAL
             catch (Exception ex)
             {
                 return ServiceResult.CreateFailure(ex);
+            }
+        }
+        
+        public async Task<ServiceResult> SaveAsync() 
+        {
+            try
+            {
+                await this.EPContext.SaveChangesAsync();
+                return ServiceResult.CreateSuccessResult();
+            }
+            catch (Exception e)
+            {
+                return ServiceResult.CreateFailure(e);
             }
         }
     }

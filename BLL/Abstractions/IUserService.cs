@@ -14,7 +14,7 @@ namespace BLL.Abstractions
 
         Task<ServiceResult<bool>> HasRoleAsync(UserViewModel userShort, string role);
         
-        Task<ServiceResult<bool>> UserExists(string email);
+        Task<ServiceResult<bool>> UserExistsAsync(string email);
 
         Task<ServiceResult<Dictionary<CourseViewModel, float>>> GetCoursesAsync(int userId, string searchStr);
         

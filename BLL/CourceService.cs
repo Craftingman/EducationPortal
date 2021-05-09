@@ -32,7 +32,22 @@ namespace BLL
         
         public async Task<ServiceResult> CreateAsync(CourseViewModel courseShort, UserViewModel creator)
         {
-            throw new System.NotImplementedException();
+            if (courseShort == null)
+            {
+                return ServiceResult.CreateFailure("Course is null.");
+            }
+
+            try
+            {
+                Course course = _mapper.Map<Course>(courseShort);
+                
+                var result = _courseRepository.Create(course);
+                if (result.Success)
+            }
+            catch (Exception e)
+            {
+                return ServiceResult.CreateFailure(e);
+            }
         }
 
         public async Task<ServiceResult<IEnumerable<CourseViewModel>>> GetCoursesAsync(string searchStr = "")
@@ -56,7 +71,7 @@ namespace BLL
             }
         }
 
-        public async Task<ServiceResult<IEnumerable<SkillViewModel>>> GetCourseSkills(CourseViewModel courseShort)
+        public async Task<ServiceResult<IEnumerable<SkillViewModel>>> GetCourseSkillsAsync(CourseViewModel courseShort)
         {
             try
             {
@@ -77,6 +92,54 @@ namespace BLL
             {
                 return ServiceResult<IEnumerable<SkillViewModel>>.CreateFailure(e);
             }
+        }
+        
+        public async Task<ServiceResult<IEnumerable<MaterialViewModel>>> GetCourseMaterialsAsync(CourseViewModel courseShort)
+        {
+            try
+            {
+                var result = await Task.Run(() => 
+                    _courseRepository.Find(courseShort.Id));
+
+                IEnumerable<Material> materials = result.Result.Materials;
+
+                if (result.Success)
+                {
+                    return ServiceResult<IEnumerable<MaterialViewModel>>.CreateSuccessResult(
+                        _mapper.Map<IEnumerable<MaterialViewModel>>(materials));
+                }
+                
+                return ServiceResult<IEnumerable<MaterialViewModel>>.CreateFailure(result.Exception);
+            }
+            catch (Exception e)
+            {
+                return ServiceResult<IEnumerable<MaterialViewModel>>.CreateFailure(e);
+            }
+        }
+
+        public async Task<ServiceResult> UpdateCourseInfoAsync(CourseViewModel courseShort)
+        {
+            throw new NotImplementedException();
+        }
+
+        public async Task<ServiceResult> AddMaterialAsync(MaterialViewModel materialShort)
+        {
+            throw new NotImplementedException();
+        }
+
+        public async Task<ServiceResult> RemoveMaterialAsync(MaterialViewModel materialShort)
+        {
+            throw new NotImplementedException();
+        }
+
+        public async Task<ServiceResult> AddSkillAsync(SkillViewModel materialShort)
+        {
+            throw new NotImplementedException();
+        }
+
+        public async Task<ServiceResult> RemoveSkillAsync(SkillViewModel materialShort)
+        {
+            throw new NotImplementedException();
         }
     }
 }

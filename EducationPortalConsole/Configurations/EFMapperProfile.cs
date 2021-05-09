@@ -15,6 +15,8 @@ namespace EducationPortalConsole.Configurations
             CreateMap<CourseViewModel, Course>();
             CreateMap<Skill, SkillViewModel>();
             CreateMap<SkillViewModel, Skill>();
+            CreateMap<Material, MaterialViewModel>();
+            CreateMap<MaterialViewModel, Material>();
         }
     }
 }

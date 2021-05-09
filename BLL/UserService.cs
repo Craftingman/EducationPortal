@@ -136,7 +136,7 @@ namespace BLL
             }
         }
 
-        public async Task<ServiceResult<bool>> UserExists(string email)
+        public async Task<ServiceResult<bool>> UserExistsAsync(string email)
         {
             try
             {

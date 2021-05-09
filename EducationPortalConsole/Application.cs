@@ -229,11 +229,70 @@ namespace EducationPortalConsole
         
         private void AddCourse()
         {
-            bool addCourseExitFlag = false;
+            
+        }
 
-            while (!addCourseExitFlag)
+        private void EditCourseMenu(CourseViewModel course)
+        {
+            bool editCourseExitFlag = false;
+
+            while (!editCourseExitFlag)
             {
+                Console.WriteLine("--- Редактировать курс ---\n");
+                Console.WriteLine($"Название: {course.Name}");
+                Console.WriteLine($"Описание: {course.Description}");
+
+                var skillsResult = _courseService.GetCourseSkillsAsync(course).Result;
+                var materialsResult = _courseService.GetCourseMaterialsAsync(course).Result;
+
+                Console.WriteLine($"Навыки:");
+                if (skillsResult.Success)
+                {
+                    ShowSkills(skillsResult.Result);
+                }
+
+                Console.WriteLine("Материалы: ");
+                if (materialsResult.Success)
+                {
+                    ShowMaterials(materialsResult.Result);
+                }
                 
+                Console.WriteLine("1. Добваить навык.");
+                Console.WriteLine("2. Удалить навык.");
+                Console.WriteLine("3. Добваить материал.");
+                Console.WriteLine("4. Удалить материал.");
+                Console.WriteLine("5. Изменить описание.");
+                Console.WriteLine("6. Изменить название.");
+                Console.WriteLine("0. Назад.");
+                Console.Write("Выберите пункт: ");
+
+                switch (ValidateChoise(Console.ReadLine()))
+                {
+                    case 0:
+                        editCourseExitFlag = true;
+                        break;
+                    case 1:
+                        break;
+                    case 2:
+                        break;
+                    case 3:
+                        break;
+                    case 4:
+                        break;
+                    case 5:
+                        Console.WriteLine("Введите новое описание:");
+                        string newDesc = Console.ReadLine();
+                        
+                        break;
+                    case 6:
+                        Console.WriteLine("Введите новое название:");
+                        string newName = Console.ReadLine();
+                        
+                        break;
+                    default:
+                        DisplayWrongInput();
+                        break;
+                }
             }
         }
 
@@ -242,20 +301,40 @@ namespace EducationPortalConsole
             Console.WriteLine($"Название: {course.Name}\n");
             Console.WriteLine($"Описание: {course.Description}\n");
             
-            var result = _courseService.GetCourseSkills(course).Result;
+            var result = _courseService.GetCourseSkillsAsync(course).Result;
 
+            Console.WriteLine($"Навыки: ");
             if (result.Success)
             {
-                Console.WriteLine($"Навыки:");
                 ShowSkills(result.Result);
                 return true;
             }
 
             return false;
         }
+        
+        private void ShowMaterials(IEnumerable<MaterialViewModel> materials)
+        {
+            if (materials == null)
+            {
+                return;
+            }
+            Console.WriteLine();
+            int i = 0;
+            foreach (var material in materials)
+            {
+                Console.WriteLine($"{i} - {material.Name}");
+                i++;
+            }
+            Console.WriteLine();
+        }
 
         private void ShowSkills(IEnumerable<SkillViewModel> skills)
         {
+            if (skills == null)
+            {
+                return;
+            }
             Console.WriteLine();
             int i = 0;
             foreach (var skill in skills)
@@ -268,6 +347,10 @@ namespace EducationPortalConsole
 
         private void ShowCourses(IEnumerable<CourseViewModel> courses)
         {
+            if (courses == null)
+            {
+                return;
+            }
             Console.WriteLine();
             int i = 0;
             foreach (var course in courses)
@@ -391,7 +474,7 @@ namespace EducationPortalConsole
                     errorMessages.Add("Пароли не совпадают.");
                 }
 
-                if (_userService.UserExists(email).Result.Result)
+                if (_userService.UserExistsAsync(email).Result.Result)
                 {
                     errorMessages.Add("Пользователь с таким E-Mail уже зарегистрирован.");
                 }
