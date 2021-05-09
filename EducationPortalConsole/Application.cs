@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using BLL.Abstractions;
+using Core;
 using Core.Entities;
 using Core.ViewModels;
 using EFCore;
@@ -49,6 +50,8 @@ namespace EducationPortalConsole
         
         public async Task StartApp()
         {
+            var result = await _userService.SignInUserAsync("viktor.zherebnyi@nure.ua", "1");
+            _currentUser = result.Result;
             while (!exitFlag)
             {
                 StartMainMenu();
@@ -173,7 +176,7 @@ namespace EducationPortalConsole
                     case 3:
                         if (_currentUser != null)
                         {
-                            Console.WriteLine("2. Добавить курс");
+                            
                             break;
                         }
                         DisplayWrongInput();
@@ -209,7 +212,8 @@ namespace EducationPortalConsole
 
                 if (isAdmin || isModer)
                 {
-                    Console.WriteLine("2. Удалить");
+                    Console.WriteLine("2. Редактировать");
+                    Console.WriteLine("3. Удалить");
                 }
 
                 Console.WriteLine("0. Назад");
@@ -220,13 +224,54 @@ namespace EducationPortalConsole
                     case 0:
                         exitCourseInfoMenuFlag = true;
                         break;
+                    case 1:
+                        if (_currentUser != null)
+                        {
+                            
+                        }
+                        DisplayWrongInput();
+                        break;
+                    case 2:
+                        if (isAdmin || isModer)
+                        {
+                            EditCourseMenu(course);
+                            break;
+                        }
+                        DisplayWrongInput();
+                        break;
+                    case 3:
+                    {
+                        if (isAdmin || isModer)
+                        {
+                            Console.Clear();
+                            Console.WriteLine("Вы уверены?\n1. Да\n2. Нет\n");
+                            Console.Write("Выберите пункт:");
+                            if (ValidateChoise(Console.ReadLine()) == 1)
+                            {
+                                if (_courseService.RemoveAsync(course).Result.Success)
+                                {
+                                    exitCourseInfoMenuFlag = true;
+                                    Console.WriteLine("Успешно.");
+                                    Thread.Sleep(800);
+                                    break;
+                                }
+                                StartErrorMenu("Неизветсная ошибка, попробуйте позже.", out bool temp);
+                                break;
+                            }
+                            Console.WriteLine("Отмена.");
+                            Thread.Sleep(800);
+                            break;
+                        }
+                        DisplayWrongInput();
+                        break;
+                    }
                     default:
                         DisplayWrongInput();
                         break;
                 }
             }
         }
-        
+
         private void AddCourse()
         {
             
@@ -235,9 +280,12 @@ namespace EducationPortalConsole
         private void EditCourseMenu(CourseViewModel course)
         {
             bool editCourseExitFlag = false;
+            bool plug = false;
 
             while (!editCourseExitFlag)
             {
+                Console.Clear();
+                Console.Clear();
                 Console.WriteLine("--- Редактировать курс ---\n");
                 Console.WriteLine($"Название: {course.Name}");
                 Console.WriteLine($"Описание: {course.Description}");
@@ -282,12 +330,26 @@ namespace EducationPortalConsole
                     case 5:
                         Console.WriteLine("Введите новое описание:");
                         string newDesc = Console.ReadLine();
-                        
+                        course.Description = newDesc;
+                        if (_courseService.UpdateCourseInfoAsync(course).Result.Success)
+                        {
+                            Console.Clear();
+                            Console.WriteLine("Успешно.");
+                            break;
+                        }
+                        StartErrorMenu("Неизвестная ошибка. Попробуйте позже", out plug);
                         break;
                     case 6:
                         Console.WriteLine("Введите новое название:");
                         string newName = Console.ReadLine();
-                        
+                        course.Name = newName;
+                        if (_courseService.UpdateCourseInfoAsync(course).Result.Success)
+                        {
+                            Console.Clear();
+                            Console.WriteLine("Успешно.");
+                            break;
+                        }
+                        StartErrorMenu("Неизвестная ошибка. Попробуйте позже", out plug);
                         break;
                     default:
                         DisplayWrongInput();
@@ -323,7 +385,7 @@ namespace EducationPortalConsole
             int i = 0;
             foreach (var material in materials)
             {
-                Console.WriteLine($"{i} - {material.Name}");
+                Console.WriteLine($"{i} - {material.Name} - {material.Type}");
                 i++;
             }
             Console.WriteLine();

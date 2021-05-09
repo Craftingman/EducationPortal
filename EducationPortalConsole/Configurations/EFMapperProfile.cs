@@ -1,4 +1,6 @@
-﻿using AutoMapper;
+﻿using System;
+using AutoMapper;
+using Castle.DynamicProxy;
 using Core.Entities;
 using Core.ViewModels;
 
@@ -15,8 +17,31 @@ namespace EducationPortalConsole.Configurations
             CreateMap<CourseViewModel, Course>();
             CreateMap<Skill, SkillViewModel>();
             CreateMap<SkillViewModel, Skill>();
-            CreateMap<Material, MaterialViewModel>();
+            CreateMap<Material, MaterialViewModel>().ForMember("Type", opt =>
+            {
+                opt.MapFrom(m => MapMaterialType(m));
+            });
             CreateMap<MaterialViewModel, Material>();
+        }
+
+        private string MapMaterialType(Material m)
+        {
+            Type t = ProxyUtil.GetUnproxiedType(m);
+
+            if (t == typeof(Book))
+            {
+                return "Книга";
+            }
+            if (t == typeof(Article))
+            {
+                return "Статья";
+            }
+            if (t == typeof(Video))
+            {
+                return "Видео";
+            }
+
+            return String.Empty;
         }
     }
 }

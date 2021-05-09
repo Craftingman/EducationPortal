@@ -43,6 +43,47 @@ namespace BLL
                 
                 var result = _courseRepository.Create(course);
                 if (result.Success)
+                {
+                    var saveResult = await _courseRepository.SaveAsync();
+                    if (saveResult.Success)
+                    {
+                        return ServiceResult.CreateSuccessResult();
+                    }
+                    return ServiceResult.CreateFailure("Database error.");
+                }
+                
+                return ServiceResult.CreateFailure("Database error.");
+            }
+            catch (Exception e)
+            {
+                return ServiceResult.CreateFailure(e);
+            }
+        }
+
+        public async Task<ServiceResult> RemoveAsync(CourseViewModel courseShort)
+        {
+            if (courseShort == null)
+            {
+                return ServiceResult.CreateFailure("Course is null.");
+            }
+
+            try
+            {
+                Course course = _mapper.Map<Course>(courseShort);
+
+                var result = _courseRepository.Delete(course);
+
+                if (result.Success)
+                {
+                    var saveResult = await _courseRepository.SaveAsync();
+                    if (saveResult.Success)
+                    {
+                        return ServiceResult.CreateSuccessResult();
+                    }
+                    return ServiceResult.CreateFailure("Database error.");
+                }
+
+                return ServiceResult.CreateFailure("Database error.");
             }
             catch (Exception e)
             {
@@ -54,8 +95,7 @@ namespace BLL
         {
             try
             {
-                var result = await Task.Run(() => 
-                    _courseRepository.FindByCondition(c => c.Name.Contains(searchStr)));
+                var result = await _courseRepository.FindByConditionAsync(c => c.Name.Contains(searchStr));
 
                 if (result.Success)
                 {
@@ -75,8 +115,7 @@ namespace BLL
         {
             try
             {
-                var result = await Task.Run(() => 
-                    _courseRepository.Find(courseShort.Id));
+                var result = await _courseRepository.FindAsync(courseShort.Id);
 
                 IEnumerable<Skill> skills = result.Result.Skills;
 
@@ -98,8 +137,7 @@ namespace BLL
         {
             try
             {
-                var result = await Task.Run(() => 
-                    _courseRepository.Find(courseShort.Id));
+                var result = await _courseRepository.FindAsync(courseShort.Id);
 
                 IEnumerable<Material> materials = result.Result.Materials;
 
@@ -119,7 +157,33 @@ namespace BLL
 
         public async Task<ServiceResult> UpdateCourseInfoAsync(CourseViewModel courseShort)
         {
-            throw new NotImplementedException();
+            if (courseShort == null)
+            {
+                return ServiceResult.CreateFailure("Course is null.");
+            }
+
+            try
+            {
+                Course course = _mapper.Map<Course>(courseShort);
+
+                var result = _courseRepository.Update(course);
+
+                if (result.Success)
+                {
+                    var saveResult = await _courseRepository.SaveAsync();
+                    if (saveResult.Success)
+                    {
+                        return ServiceResult.CreateSuccessResult();
+                    }
+                    return ServiceResult.CreateFailure("Database error.");
+                }
+
+                return ServiceResult.CreateFailure("Database error.");
+            }
+            catch (Exception e)
+            {
+                return ServiceResult.CreateFailure(e);
+            }
         }
 
         public async Task<ServiceResult> AddMaterialAsync(MaterialViewModel materialShort)

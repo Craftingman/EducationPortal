@@ -10,6 +10,8 @@ namespace BLL.Abstractions
     {
         public Task<ServiceResult> CreateAsync(CourseViewModel courseShort, UserViewModel creator = null);
 
+        public Task<ServiceResult> RemoveAsync(CourseViewModel courseShort);
+
         public Task<ServiceResult<IEnumerable<CourseViewModel>>> GetCoursesAsync(string searchStr);
 
         public Task<ServiceResult<IEnumerable<SkillViewModel>>> GetCourseSkillsAsync(CourseViewModel courseShort);
