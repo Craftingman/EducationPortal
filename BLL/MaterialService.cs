@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
 using BLL.Abstractions;
+using Castle.DynamicProxy;
 using Core;
 using Core.Entities;
 using Core.ViewModels;
@@ -37,13 +38,13 @@ namespace BLL
             {
                 var result = await _materialRepository.FindByConditionAsync(c => c.Name.Contains(searchStr));
 
-                if (result.Success)
+                if (!result.Success)
                 {
-                    return ServiceResult<IEnumerable<MaterialViewModel>>.CreateSuccessResult(
-                        _mapper.Map<IEnumerable<MaterialViewModel>>(result.Result.ToList()));
+                    return ServiceResult<IEnumerable<MaterialViewModel>>.CreateFailure("Database error.");
                 }
-                
-                return ServiceResult<IEnumerable<MaterialViewModel>>.CreateFailure(result.Exception);
+
+                return ServiceResult<IEnumerable<MaterialViewModel>>.CreateSuccessResult(
+                    _mapper.Map<IEnumerable<MaterialViewModel>>(result.Result.ToList()));
             }
             catch (Exception e)
             {
@@ -95,6 +96,52 @@ namespace BLL
             catch (Exception e)
             {
                 return ServiceResult.CreateFailure(e);
+            }
+        }
+
+        public async Task<ServiceResult<MaterialViewModel>> GetMaterialAsync(int materialId)
+        {
+            try
+            {
+                var materialResult = await _materialRepository.FindAsync(materialId);
+                
+                if (!materialResult.Success)
+                {
+                    return ServiceResult<MaterialViewModel>.CreateFailure("Database error.");
+                }
+
+                Material material = materialResult.Result;
+                
+                if (material is null)
+                {
+                    string message = $"Material with id {materialId} doesn't exist.";
+                    
+                    return ServiceResult<MaterialViewModel>.CreateFailure(message, 404);
+                }
+
+                Type materialType = ProxyUtil.GetUnproxiedType(material);
+
+                if (materialType == typeof(Book))
+                {
+                    return ServiceResult<MaterialViewModel>.CreateSuccessResult(
+                        _mapper.Map<BookViewModel>((Book)material));
+                } 
+                if (materialType == typeof(Article))
+                {
+                    return ServiceResult<MaterialViewModel>.CreateSuccessResult(
+                        _mapper.Map<ArticleViewModel>((Article)material));
+                }
+                if (materialType == typeof(Video))
+                {
+                    return ServiceResult<MaterialViewModel>.CreateSuccessResult(
+                        _mapper.Map<VideoViewModel>((Video)material));
+                }
+                
+                return ServiceResult<MaterialViewModel>.CreateFailure("Incorrect material type.");
+            } 
+            catch (Exception e)
+            {
+                return ServiceResult<MaterialViewModel>.CreateFailure(e);
             }
         }
     }

@@ -1030,6 +1030,68 @@ namespace EducationPortalConsole
             Console.WriteLine();
         }
 
+        private void StartMaterialInfoMenu(MaterialViewModel material)
+        {
+            bool exitMaterialMenuFlag = false;
+            bool plug = false;
+
+            while (!exitMaterialMenuFlag)
+            {
+                Console.Clear();
+                Console.Clear();
+                Console.WriteLine("--- Материал ---\n");
+
+                var materialResult = _materialService.GetMaterialAsync(material.Id).Result;
+                if (!materialResult.Success)
+                {
+                    StartErrorMenu("Неизвестная ошибка. Попробуйте позже", out exitMaterialMenuFlag);
+                    break;
+                }
+
+                MaterialViewModel materialFull = materialResult.Result;
+                
+                Console.WriteLine($"Название: {materialFull.Name}");
+                Console.WriteLine($"Ссылка на материал: {materialFull.MaterialURL}");
+
+                Type materialType = materialFull.GetType();
+                
+                if (materialType == typeof(BookViewModel))
+                {
+                    Console.WriteLine($"Формат: {((BookViewModel)materialFull).Format}");
+                    Console.WriteLine($"Авторы: {((BookViewModel)materialFull).Authors}");
+                    Console.WriteLine($"Количество страниц: {((BookViewModel)materialFull).Pages}");
+                    Console.WriteLine($"Год публикации: {((BookViewModel)materialFull).PublishYear}");
+                } else if (materialType == typeof(ArticleViewModel))
+                {
+                    Console.WriteLine($"Формат: {((ArticleViewModel)materialFull).PublishDate.ToString()}");
+                    Console.WriteLine($"Источник: {((ArticleViewModel)materialFull).Source}");
+                } else if (materialType == typeof(VideoViewModel))
+                {
+                    Console.WriteLine($"Длительность: {((VideoViewModel)materialFull).Duration.Hours}:" +
+                                      $"{((VideoViewModel)materialFull).Duration.Minutes}:" +
+                                      $"{((VideoViewModel)materialFull).Duration.Seconds}");
+                    Console.WriteLine($"Разрешение: {((VideoViewModel)materialFull).Resolution}");
+                }
+
+                Console.WriteLine("1. Пройти материал");
+                Console.WriteLine("0. Выход");
+                Console.Write("Выберите пункт: ");
+                
+                switch (ValidateChoise(Console.ReadLine()))
+                {
+                    case 0:
+                        exitMaterialMenuFlag = true;
+                        break;
+                    case 1:
+                        
+                        break;
+                    default:
+                        DisplayWrongInput();
+                        break;
+                }
+            }
+        }
+
         private void StartActiveCourseMenu(CourseViewModel course)
         {
             bool exitCoursesMenuFlag = false;
@@ -1068,7 +1130,7 @@ namespace EducationPortalConsole
 
                         if (choise >= 0 && choise < activeCourse.UncompletedMaterials.Count)
                         {
-
+                            StartMaterialInfoMenu(activeCourse.UncompletedMaterials.ElementAt(choise));
                             break;
                         }
 
@@ -1076,7 +1138,17 @@ namespace EducationPortalConsole
                         Thread.Sleep(800);
                         break;
                     case 2:
-                       
+                        var removeResult = _userService.RemoveUserCourse(_currentUser.Id, course.Id).Result;
+                        if (!removeResult.Success)
+                        {
+                            StartErrorMenu("Неизвестная ошибка. Попробуйте позже", out exitCoursesMenuFlag);
+                            break;
+                        }
+
+                        exitCoursesMenuFlag = true;
+                        Console.Clear();
+                        Console.WriteLine("Успешно.");
+                        Thread.Sleep(800);
                         break;
                     default:
                         DisplayWrongInput();

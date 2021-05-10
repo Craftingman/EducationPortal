@@ -11,5 +11,7 @@ namespace BLL.Abstractions
         Task<ServiceResult<IEnumerable<MaterialViewModel>>> GetMaterialsAsync(string searchStr = "");
         
         Task<ServiceResult> AddMaterialAsync(MaterialViewModel materialShort);
+
+        Task<ServiceResult<MaterialViewModel>> GetMaterialAsync(int materialId);
     }
 }
