@@ -75,6 +75,7 @@ namespace EducationPortalConsole
             services.AddTransient<IRepositoryBase<Skill>, RepositoryBase<Skill>>();
             services.AddTransient<IRepositoryBase<Course>, RepositoryBase<Course>>();
             services.AddTransient<IRepositoryBase<User>, RepositoryBase<User>>();
+            services.AddTransient<IRepositoryBase<UserCourse>, RepositoryBase<UserCourse>>();
             services.AddTransient<IConfiguration>(provider => _configuration);
 
             return services;

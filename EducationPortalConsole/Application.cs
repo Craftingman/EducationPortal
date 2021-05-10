@@ -234,7 +234,17 @@ namespace EducationPortalConsole
                     case 1:
                         if (_currentUser != null)
                         {
+                            var addCourseResult = _userService.AddUserCourse(_currentUser.Id, course.Id).Result;
+                            if (!addCourseResult.Success)
+                            {
+                                StartErrorMenu("Неизветсная ошибка, попробуйте позже.", out bool temp);
+                                break;
+                            }
                             
+                            Console.Clear();
+                            Console.WriteLine("Успешно.");
+                            Thread.Sleep(800);
+                            break;
                         }
                         DisplayWrongInput();
                         break;
@@ -990,10 +1000,153 @@ namespace EducationPortalConsole
         {
             
         }
-        
-        private void StartUserCourseMenu()
+
+        private void ShowActiveCourses(Dictionary<CourseViewModel, float> courses)
+        {
+            if (courses == null)
+            {
+                return;
+            }
+            Console.WriteLine();
+            int i = 0;
+            foreach (var item in courses)
+            {
+                Console.WriteLine($"{i}. {item.Key.Name} - Прогресс: {(int)(item.Value * 100)}%\n");
+                i++;
+            }
+        }
+
+        private void StartActiveCourseMenu(CourseViewModel course)
         {
             
+            
+        }
+
+        private void StartActiveCoursesMenu()
+        {
+            bool exitCoursesMenuFlag = false;
+            string searchString = "";
+
+            while (!exitCoursesMenuFlag)
+            {
+                Console.Clear();
+                Console.Clear();
+                Console.WriteLine("--- Активные Курсы ---");
+
+                var coursesResult = _userService.GetActiveCoursesAsync(_currentUser.Id, searchString).Result;
+                if (!coursesResult.Success)
+                {
+                    StartErrorMenu("Неизвестная ошибка. Попробуйте позже", out exitCoursesMenuFlag);
+                    break;
+                }
+                
+                Dictionary<CourseViewModel, float> activeCourses = coursesResult.Result;
+
+                ShowActiveCourses(activeCourses);
+                
+                Console.WriteLine("1. Поиск");
+                Console.WriteLine("2. Выбрать курс");
+                Console.WriteLine("0. Выход");
+                Console.Write("Выберите пункт: ");
+                
+                switch (ValidateChoise(Console.ReadLine()))
+                {
+                    case 0:
+                        exitCoursesMenuFlag = true;
+                        break;
+                    case 1:
+                        Console.WriteLine($"Поисковая строка сейчас: \'{searchString}\'");
+                        Console.Write($"Введите часть названия курса: ");
+                        searchString = Console.ReadLine();
+                        break;
+                    case 2:
+                        Console.Write("Введите номер курса: ");
+                        int choise = ValidateChoise(Console.ReadLine());
+                        
+                        if (choise >= 0 && choise < activeCourses.Count)
+                        {
+                            
+                            break;
+                        }
+                        
+                        Console.WriteLine("Неверный номер курса.");
+                        Thread.Sleep(800);
+                        break;
+                    default:
+                        DisplayWrongInput();
+                        break;
+                }
+            }
+        }
+
+        private void StartCompletedCoursesMenu()
+        {
+            bool exitCoursesMenuFlag = false;
+            string searchString = "";
+
+            while (!exitCoursesMenuFlag)
+            {
+                Console.Clear();
+                Console.Clear();
+                Console.WriteLine("--- Завершенные Курсы ---");
+
+                var coursesResult = _userService.GetCompletedCoursesAsync(_currentUser.Id, searchString).Result;
+                if (!coursesResult.Success)
+                {
+                    StartErrorMenu("Неизвестная ошибка. Попробуйте позже", out exitCoursesMenuFlag);
+                    break;
+                }
+                
+                IEnumerable<CourseViewModel> completedCourses = coursesResult.Result;
+
+                ShowCourses(completedCourses);
+                
+                Console.WriteLine("1. Поиск");
+                Console.WriteLine("0. Выход");
+                Console.Write("Выберите пункт: ");
+                
+                switch (ValidateChoise(Console.ReadLine()))
+                {
+                    case 0:
+                        exitCoursesMenuFlag = true;
+                        break;
+                    case 1:
+                        Console.WriteLine($"Поисковая строка сейчас: \'{searchString}\'");
+                        Console.Write($"Введите часть названия курса: ");
+                        searchString = Console.ReadLine();
+                        break;
+                    default:
+                        DisplayWrongInput();
+                        break;
+                }
+            }
+        }
+
+        private void StartUserCourseMenu()
+        {
+            Console.Clear();
+            Console.WriteLine("1. Созданные курсы");
+            Console.WriteLine("2. Активные курсы");
+            Console.WriteLine("3. Завершенные курсы");
+            Console.WriteLine("0. Назад");
+            Console.Write("Выберите пункт: ");
+            
+            switch (ValidateChoise(Console.ReadLine()))
+            {
+                case 0:
+                    return;
+                case 1:
+                    break;
+                case 2:
+                    StartActiveCoursesMenu();
+                    break;
+                case 3:
+                    StartCompletedCoursesMenu();
+                    break;
+                default:
+                    DisplayWrongInput();
+                    return;
+            }
         }
 
         private void ShowUserStatistics()

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -21,7 +22,13 @@ namespace BLL
 
         private readonly IMapper _mapper;
 
-        //private readonly IRepositoryBase<User> _userRepository;
+        private readonly IRepositoryBase<User> _userRepository;
+        
+        private readonly IRepositoryBase<Course> _courseRepository;
+        
+        private readonly IRepositoryBase<UserCourse> _userCourseRepository;
+        
+        private readonly IRepositoryBase<Material> _materialRepository;
 
         private readonly IUserValidator<User> _userValidator;
         
@@ -30,14 +37,20 @@ namespace BLL
         public UserService(
             UserManager<User> userManager, 
             RoleManager<IdentityRole<int>> roleManager,
-            //IRepositoryBase<User> userRepository,
+            IRepositoryBase<User> userRepository,
+            IRepositoryBase<Course> courseRepository,
+            IRepositoryBase<Material> materialRepository,
+            IRepositoryBase<UserCourse> userCourseRepository,
             IUserValidator<User> userValidator,
             IPasswordValidator<User> passwordValidator,
             IMapper mapper)
         {
             _userManager = userManager;
             _roleManager = roleManager;
-            //_userRepository = userRepository;
+            _userRepository = userRepository;
+            _materialRepository = materialRepository;
+            _courseRepository = courseRepository;
+            _userCourseRepository = userCourseRepository;
             _userValidator = userValidator;
             _passwordValidator = passwordValidator;
             _mapper = mapper;
@@ -152,6 +165,279 @@ namespace BLL
             }
         }
 
+        public async Task<ServiceResult> CompleteMaterial(int userId, int materialId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public async Task<ServiceResult> AddUserCourse(int userId, int courseId)
+        {
+            try
+            {
+                var courseResult = await _courseRepository.FindAsync(courseId);
+                var userResult = await _userRepository.FindAsync(userId);
+                
+                if (!userResult.Success || !courseResult.Success)
+                {
+                    return ServiceResult.CreateFailure("Database error.");
+                }
+
+                User user = userResult.Result;
+                Course course = courseResult.Result;
+                
+                if (user is null)
+                {
+                    string message = $"User with id {userId} doesn't exist.";
+                    
+                    return ServiceResult.CreateFailure(message, 404);
+                }
+            
+                if (course is null)
+                {
+                    string message = $"Course with id {userId} doesn't exist.";
+                    
+                    return ServiceResult.CreateFailure(message, 404);
+                }
+                
+                user.Courses.Add(course);
+                
+                var saveResult = await _userRepository.SaveAsync();
+                if (!saveResult.Success)
+                {
+                    return ServiceResult.CreateFailure("Database error.");
+                }
+                
+                var updateResult = await UpdateCourse(userId, courseId);
+                if (!updateResult.Success)
+                {
+                    return ServiceResult.CreateFailure(updateResult.NonSuccessMessage);
+                }
+                
+                return ServiceResult.CreateSuccessResult();
+            }
+            catch (Exception e)
+            {
+                return ServiceResult.CreateFailure(e);
+            }
+        }
+
+        public async Task<ServiceResult> RemoveUserCourse(int userId, int courseId)
+        {
+            try
+            {
+                var courseResult = await _courseRepository.FindAsync(courseId);
+                var userResult = await _userRepository.FindAsync(userId);
+                
+                if (!userResult.Success || !courseResult.Success)
+                {
+                    return ServiceResult.CreateFailure("Database error.");
+                }
+
+                User user = userResult.Result;
+                Course course = courseResult.Result;
+                
+                if (user is null)
+                {
+                    string message = $"User with id {userId} doesn't exist.";
+                    
+                    return ServiceResult.CreateFailure(message, 404);
+                }
+            
+                if (course is null)
+                {
+                    string message = $"Course with id {userId} doesn't exist.";
+                    
+                    return ServiceResult.CreateFailure(message, 404);
+                }
+                
+                user.Courses.Remove(user.Courses.FirstOrDefault(c => c.Id == courseId));
+                
+                var saveResult = await _userRepository.SaveAsync();
+                if (!saveResult.Success)
+                {
+                    return ServiceResult.CreateFailure("Database error.");
+                }
+
+                return ServiceResult.CreateSuccessResult();
+            }
+            catch (Exception e)
+            {
+                return ServiceResult.CreateFailure(e);
+            }
+        }
+
+        public async Task<ServiceResult> UpdateUserCourses(int userId)
+        {
+            try
+            {
+                var userResult = await _userRepository.FindAsync(userId);
+                
+                if (!userResult.Success)
+                {
+                    return ServiceResult.CreateFailure("Database error.");
+                }
+
+                User user = userResult.Result;
+                
+                if (user is null)
+                {
+                    string message = $"User with id {userId} doesn't exist.";
+                    
+                    return ServiceResult.CreateFailure(message, 404);
+                }
+
+                List<UserCourse> userCourses = user.UserCourses.ToList();
+
+                foreach (UserCourse userCourse in userCourses)
+                {
+                    int completedCourseMaterialsCount = user.Materials
+                        .Join(userCourse.Course.Materials,
+                            um => um.Id,
+                            cm => cm.Id, 
+                            (um, cm) => um)
+                        .Count();
+
+                    if (completedCourseMaterialsCount == 0)
+                    {
+                        userCourse.Progress = 0;
+                    }
+                    else
+                    {
+                        userCourse.Progress = completedCourseMaterialsCount / (float)userCourse.Course.Materials.Count;
+                    }
+                }
+
+                var saveResult = await _userRepository.SaveAsync();
+                if (!saveResult.Success)
+                {
+                    return ServiceResult.CreateFailure("Database error.");
+                }
+
+                return ServiceResult.CreateSuccessResult();
+            }
+            catch (Exception e)
+            {
+                return ServiceResult.CreateFailure(e);
+            }
+        }
+
+        public async Task<ServiceResult> UpdateUserCourses(int userId, int materialId)
+        {
+            try
+            {
+                var userResult = await _userRepository.FindAsync(userId);
+                
+                if (!userResult.Success)
+                {
+                    return ServiceResult.CreateFailure("Database error.");
+                }
+
+                User user = userResult.Result;
+                
+                if (user is null)
+                {
+                    string message = $"User with id {userId} doesn't exist.";
+                    
+                    return ServiceResult.CreateFailure(message, 404);
+                }
+
+                List<UserCourse> userCourses = user.UserCourses
+                    .Where(uc => uc.Course.Materials
+                        .Select(m => m.Id).Contains(materialId))
+                    .ToList();
+
+                foreach (UserCourse userCourse in userCourses)
+                {
+                    int completedCourseMaterialsCount = user.Materials
+                        .Join(userCourse.Course.Materials,
+                            um => um.Id,
+                            cm => cm.Id, 
+                            (um, cm) => um)
+                        .Count();
+
+                    if (completedCourseMaterialsCount == 0)
+                    {
+                        userCourse.Progress = 0;
+                    }
+                    else
+                    {
+                        userCourse.Progress = completedCourseMaterialsCount / (float)userCourse.Course.Materials.Count;
+                    }
+                }
+
+                var saveResult = await _userRepository.SaveAsync();
+                if (!saveResult.Success)
+                {
+                    return ServiceResult.CreateFailure("Database error.");
+                }
+
+                return ServiceResult.CreateSuccessResult();
+            }
+            catch (Exception e)
+            {
+                return ServiceResult.CreateFailure(e);
+            }
+        }
+
+        public async Task<ServiceResult> UpdateCourse(int userId, int courseId)
+        {
+            try
+            {
+                var userResult = await _userRepository.FindAsync(userId);
+                
+                if (!userResult.Success)
+                {
+                    return ServiceResult.CreateFailure("Database error.");
+                }
+
+                User user = userResult.Result;
+                
+                if (user is null)
+                {
+                    string message = $"User with id {userId} doesn't exist.";
+                    
+                    return ServiceResult.CreateFailure(message, 404);
+                }
+
+                UserCourse userCourse = user.UserCourses.FirstOrDefault(uc => uc.CourseId == courseId);
+
+                if (userCourse is null)
+                {
+                    string message = $"User with id {userId} doesn't have course with id {courseId}.";
+                    
+                    return ServiceResult.CreateFailure(message, 404);
+                }
+
+                int completedCourseMaterialsCount = user.Materials
+                    .Join(userCourse.Course.Materials,
+                        um => um.Id,
+                        cm => cm.Id, 
+                        (um, cm) => um)
+                    .Count();
+
+                if (completedCourseMaterialsCount == 0)
+                {
+                    userCourse.Progress = 0;
+                }
+                else
+                {
+                    userCourse.Progress = completedCourseMaterialsCount / (float)userCourse.Course.Materials.Count;
+                }
+
+                var saveResult = await _userRepository.SaveAsync();
+                if (!saveResult.Success)
+                {
+                    return ServiceResult.CreateFailure("Database error.");
+                }
+
+                return ServiceResult.CreateSuccessResult();
+            }
+            catch (Exception e)
+            {
+                return ServiceResult.CreateFailure(e);
+            }
+        }
+
         public async Task<ServiceResult<Dictionary<CourseViewModel, float>>> GetCoursesAsync
             (int userId, string searcStr = "")
         {
@@ -192,25 +478,31 @@ namespace BLL
             }
         }
 
-        public async Task<ServiceResult<Dictionary<CourseViewModel, float>>> GetInProgressCoursesAsync
+        public async Task<ServiceResult<Dictionary<CourseViewModel, float>>> GetActiveCoursesAsync
             (int userId, string searcStr = "")
         {
             try
             {
-                User user = await Task.Run(() => _userManager.Users.FirstOrDefault(u => u.Id == userId));
-            
+                var userResult = await _userRepository.FindAsync(userId);
+                
+                if (!userResult.Success)
+                {
+                    return ServiceResult<Dictionary<CourseViewModel, float>>.CreateFailure("Database error.");
+                }
+
+                User user = userResult.Result;
+
                 if (user is null)
                 {
                     string message = $"User with id {userId} doesn't exist.";
                     
-                    return ServiceResult<Dictionary<CourseViewModel, float>>
-                        .CreateFailure(message, 404);
+                    return ServiceResult<Dictionary<CourseViewModel, float>>.CreateFailure(message, 404);
                 }
                 
                 Dictionary<CourseViewModel, float> dict = await Task.Run(() =>
                 {
                     return user.UserCourses
-                        .Where(uc => uc.Progress != 1)
+                        .Where(uc => uc.Progress < 1)
                         .Where(uc => uc.Course.Name.Contains(searcStr))
                         .ToDictionary(uc => _mapper.Map<CourseViewModel>(uc.Course), 
                             uc => uc.Progress);
@@ -221,6 +513,61 @@ namespace BLL
             catch (Exception e)
             {
                 return ServiceResult<Dictionary<CourseViewModel, float>>.CreateFailure(e);
+            }
+        }
+
+        public async Task<ServiceResult<ActiveCourseViewModel>> GetActiveCourse(int userId, int courseId)
+        {
+            try
+            {
+                var userResult = await _userRepository.FindAsync(userId);
+                
+                if (!userResult.Success)
+                {
+                    return ServiceResult<ActiveCourseViewModel>.CreateFailure("Database error.");
+                }
+
+                User user = userResult.Result;
+                
+                if (user is null)
+                {
+                    string message = $"User with id {userId} doesn't exist.";
+                    
+                    return ServiceResult<ActiveCourseViewModel>.CreateFailure(message, 404);
+                }
+
+                UserCourse userCourse = user.UserCourses.FirstOrDefault(uc => uc.CourseId == courseId);
+
+                if (userCourse is null)
+                {
+                    string message = $"User with id {userId} doesn't have course with id {courseId}.";
+                    
+                    return ServiceResult<ActiveCourseViewModel>.CreateFailure(message, 404);
+                }
+
+                ICollection<MaterialViewModel> completedMaterials = _mapper.Map<ICollection<MaterialViewModel>>(user
+                    .Materials
+                    .Join(userCourse.Course.Materials,
+                        um => um.Id,
+                        cm => cm.Id,
+                        (um, cm) => um));
+
+                ICollection<MaterialViewModel> uncompletedMaterials = _mapper.Map<ICollection<MaterialViewModel>>(user
+                    .Materials.Where(m => !userCourse.Course.Materials.Select(cm => cm.Id).Contains(m.Id)));
+
+                ActiveCourseViewModel activeCourse = new ActiveCourseViewModel()
+                {
+                    Id = userCourse.Course.Id,
+                    Name = userCourse.Course.Name,
+                    Description = userCourse.Course.Description,
+                    CompletedMaterials = completedMaterials,
+                    UncompletedMaterials = uncompletedMaterials
+                };
+
+                return ServiceResult<ActiveCourseViewModel>.CreateSuccessResult(activeCourse);
+            } catch (Exception e)
+            {
+                return ServiceResult<ActiveCourseViewModel>.CreateFailure(e);
             }
         }
 

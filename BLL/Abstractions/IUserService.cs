@@ -16,9 +16,23 @@ namespace BLL.Abstractions
         
         Task<ServiceResult<bool>> UserExistsAsync(string email);
 
+        Task<ServiceResult> CompleteMaterial(int userId, int materialId);
+
+        Task<ServiceResult> AddUserCourse(int userId, int courseId);
+        
+        Task<ServiceResult> RemoveUserCourse(int userId, int courseId);
+
+        Task<ServiceResult> UpdateUserCourses(int userId);
+        
+        Task<ServiceResult> UpdateUserCourses(int userId, int materialId);
+        
+        Task<ServiceResult> UpdateCourse(int userId, int courseId);
+
         Task<ServiceResult<Dictionary<CourseViewModel, float>>> GetCoursesAsync(int userId, string searchStr);
         
-        Task<ServiceResult<Dictionary<CourseViewModel, float>>> GetInProgressCoursesAsync(int userId,  string searchStr);
+        Task<ServiceResult<Dictionary<CourseViewModel, float>>> GetActiveCoursesAsync(int userId,  string searchStr);
+
+        Task<ServiceResult<ActiveCourseViewModel>> GetActiveCourse(int userId, int courseId);
 
         Task<ServiceResult<IEnumerable<CourseViewModel>>> GetCreatedCoursesAsync(int userId,  string searchStr);
         
