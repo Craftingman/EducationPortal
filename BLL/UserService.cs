@@ -516,7 +516,7 @@ namespace BLL
             }
         }
 
-        public async Task<ServiceResult<ActiveCourseViewModel>> GetActiveCourse(int userId, int courseId)
+        public async Task<ServiceResult<ActiveCourseViewModel>> GetActiveCourseAsync(int userId, int courseId)
         {
             try
             {
@@ -552,8 +552,10 @@ namespace BLL
                         cm => cm.Id,
                         (um, cm) => um));
 
-                ICollection<MaterialViewModel> uncompletedMaterials = _mapper.Map<ICollection<MaterialViewModel>>(user
-                    .Materials.Where(m => !userCourse.Course.Materials.Select(cm => cm.Id).Contains(m.Id)));
+                ICollection<MaterialViewModel> uncompletedMaterials = _mapper.Map<ICollection<MaterialViewModel>>(userCourse
+                    .Course.Materials
+                    .Where(m => !user.Materials
+                        .Select(cm => cm.Id).Contains(m.Id)));
 
                 ActiveCourseViewModel activeCourse = new ActiveCourseViewModel()
                 {

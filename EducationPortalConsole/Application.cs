@@ -1016,10 +1016,73 @@ namespace EducationPortalConsole
             }
         }
 
+        private void ShowActiveCourse(ActiveCourseViewModel course)
+        {
+            Console.WriteLine($"Название: {course.Name}\n");
+            Console.WriteLine($"Описание: {course.Description}\n");
+            Console.WriteLine($"Непройденные материалы: ");
+            ShowMaterials(course.UncompletedMaterials);
+            Console.WriteLine($"Пройденные материалы: \n");
+            foreach (var material in course.CompletedMaterials)
+            {
+                Console.WriteLine($"- {material.Name}");
+            }
+            Console.WriteLine();
+        }
+
         private void StartActiveCourseMenu(CourseViewModel course)
         {
-            
-            
+            bool exitCoursesMenuFlag = false;
+            string searchString = "";
+
+            while (!exitCoursesMenuFlag)
+            {
+                Console.Clear();
+                Console.Clear();
+                Console.WriteLine("--- Курс ---");
+
+                var coursesResult = _userService.GetActiveCourseAsync(_currentUser.Id, course.Id).Result;
+                if (!coursesResult.Success)
+                {
+                    StartErrorMenu("Неизвестная ошибка. Попробуйте позже", out exitCoursesMenuFlag);
+                    break;
+                }
+
+                ActiveCourseViewModel activeCourse = coursesResult.Result;
+
+                ShowActiveCourse(activeCourse);
+                
+                Console.WriteLine("1. Выбрать материал");
+                Console.WriteLine("2. Удалить курс");
+                Console.WriteLine("0. Выход");
+                Console.Write("Выберите пункт: ");
+
+                switch (ValidateChoise(Console.ReadLine()))
+                {
+                    case 0:
+                        exitCoursesMenuFlag = true;
+                        break;
+                    case 1:
+                        Console.Write("Введите номер материала: ");
+                        int choise = ValidateChoise(Console.ReadLine());
+
+                        if (choise >= 0 && choise < activeCourse.UncompletedMaterials.Count)
+                        {
+
+                            break;
+                        }
+
+                        Console.WriteLine("Неверный номер материала.");
+                        Thread.Sleep(800);
+                        break;
+                    case 2:
+                       
+                        break;
+                    default:
+                        DisplayWrongInput();
+                        break;
+                }
+            }
         }
 
         private void StartActiveCoursesMenu()
@@ -1065,7 +1128,7 @@ namespace EducationPortalConsole
                         
                         if (choise >= 0 && choise < activeCourses.Count)
                         {
-                            
+                            StartActiveCourseMenu(activeCourses.ElementAt(choise).Key);
                             break;
                         }
                         
