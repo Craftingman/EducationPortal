@@ -183,7 +183,7 @@ namespace EducationPortalConsole
                     case 3:
                         if (_currentUser != null)
                         {
-                            
+                            AddCourse();
                             break;
                         }
                         DisplayWrongInput();
@@ -281,7 +281,53 @@ namespace EducationPortalConsole
 
         private void AddCourse()
         {
+            bool plug = false;
             
+            Console.Clear();
+            Console.WriteLine("--- Создание курса ---");
+            
+            Console.Write("Введите название курса:");
+            string courseName = Console.ReadLine();
+            
+            Console.Write("Введите описание курса:");
+            string courseDesc = Console.ReadLine();
+            
+            List<string> errorMessages = new List<string>();
+                
+            if (!Regex.IsMatch(courseName, _configuration["ValidationPatterns:Course:Name"]))
+            {
+                errorMessages.Add("Слишком длинное либо короткое название.");
+            }
+            if (!Regex.IsMatch(courseDesc, _configuration["ValidationPatterns:Course:Description"]))
+            {
+                errorMessages.Add("Слишком длинное либо короткое описание.");
+            }
+
+            if (errorMessages.Any())
+            {
+                Console.Clear();
+                StartErrorMenu(errorMessages, out plug);
+                return;
+            }
+
+            CourseViewModel course = new CourseViewModel()
+            {
+                Name = courseName,
+                Description = courseDesc
+            };
+            
+            var result = _courseService.CreateAsync(course, _currentUser).Result;
+
+            if (result.Success)
+            {
+                Console.Clear();
+                Console.WriteLine("Курс успешно добавлен.");
+                Thread.Sleep(800);
+                EditCourseMenu(course);
+                return;
+            }
+            
+            StartErrorMenu("Произошла ошибка. Попробуйте позже.", out plug);
         }
 
         private void EditCourseMenu(CourseViewModel course)

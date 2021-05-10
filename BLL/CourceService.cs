@@ -21,6 +21,8 @@ namespace BLL
 
         private readonly IRepositoryBase<Skill> _skillRepository;
 
+        private readonly IRepositoryBase<User> _userRepository;
+
         private readonly IConfiguration _configuration;
 
         private readonly IMapper _mapper;
@@ -28,13 +30,15 @@ namespace BLL
         public CourseService(
             IRepositoryBase<Course> courseRepository,
             IRepositoryBase<Material> materialRepository,
-            IRepositoryBase<Skill>skillRepository,
+            IRepositoryBase<Skill> skillRepository,
+            IRepositoryBase<User> userRepository,
             IConfiguration configuration,
             IMapper mapper)
         {
             _courseRepository = courseRepository;
             _materialRepository = materialRepository;
             _skillRepository = skillRepository;
+            _userRepository = userRepository;
             _configuration = configuration;
             _mapper = mapper;
         }
@@ -49,13 +53,26 @@ namespace BLL
             try
             {
                 Course course = _mapper.Map<Course>(courseShort);
-                
+
+                if (creator is not null)
+                {
+                    var userResult = await _userRepository.FindAsync(creator.Id);
+
+                    if (!userResult.Success)
+                    {
+                        return ServiceResult.CreateFailure("Database error.");
+                    }
+
+                    course.Creator = userResult.Result;
+                }
+
                 var result = _courseRepository.Create(course);
                 if (result.Success)
                 {
                     var saveResult = await _courseRepository.SaveAsync();
                     if (saveResult.Success)
                     {
+                        courseShort.Id = course.Id;
                         return ServiceResult.CreateSuccessResult();
                     }
                     return ServiceResult.CreateFailure("Database error.");
@@ -78,9 +95,13 @@ namespace BLL
 
             try
             {
-                Course course = _mapper.Map<Course>(courseShort);
+                var findResult = await _courseRepository.FindAsync(courseShort.Id);
+                if (!findResult.Success)
+                {
+                    return ServiceResult.CreateFailure("Database error.");
+                }
 
-                var result = _courseRepository.Delete(course);
+                var result = _courseRepository.Delete(findResult.Result);
 
                 if (result.Success)
                 {
