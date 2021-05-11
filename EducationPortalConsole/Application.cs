@@ -1050,6 +1050,7 @@ namespace EducationPortalConsole
 
                 MaterialViewModel materialFull = materialResult.Result;
                 
+                Console.WriteLine($"Тип: {materialFull.Type}");
                 Console.WriteLine($"Название: {materialFull.Name}");
                 Console.WriteLine($"Ссылка на материал: {materialFull.MaterialURL}");
 
@@ -1083,7 +1084,17 @@ namespace EducationPortalConsole
                         exitMaterialMenuFlag = true;
                         break;
                     case 1:
-                        
+                        var result = _userService.CompleteMaterialAsync(_currentUser.Id, material.Id).Result;
+                        if (!result.Success)
+                        {
+                            StartErrorMenu("Неизвестная ошибка. Попробуйте позже", out plug);
+                            break;
+                        }
+
+                        exitMaterialMenuFlag = true;
+                        Console.Clear();
+                        Console.WriteLine("Успешно.");
+                        Thread.Sleep(800);
                         break;
                     default:
                         DisplayWrongInput();

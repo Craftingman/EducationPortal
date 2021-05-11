@@ -165,9 +165,55 @@ namespace BLL
             }
         }
 
-        public async Task<ServiceResult> CompleteMaterial(int userId, int materialId)
+        public async Task<ServiceResult> CompleteMaterialAsync(int userId, int materialId)
         {
-            throw new NotImplementedException();
+            try
+            {
+                var materialResult = await _materialRepository.FindAsync(materialId);
+                var userResult = await _userRepository.FindAsync(userId);
+                
+                if (!userResult.Success || !materialResult.Success)
+                {
+                    return ServiceResult.CreateFailure("Database error.");
+                }
+
+                User user = userResult.Result;
+                Material material = materialResult.Result;
+                
+                if (user is null)
+                {
+                    string message = $"User with id {userId} doesn't exist.";
+                    
+                    return ServiceResult.CreateFailure(message, 404);
+                }
+            
+                if (material is null)
+                {
+                    string message = $"Material with id {materialId} doesn't exist.";
+                    
+                    return ServiceResult.CreateFailure(message, 404);
+                }
+                
+                user.Materials.Add(material);
+                
+                var saveResult = await _userRepository.SaveAsync();
+                if (!saveResult.Success)
+                {
+                    return ServiceResult.CreateFailure("Database error.");
+                }
+                
+                var updateResult = await UpdateUserCourses(userId, materialId);
+                if (!updateResult.Success)
+                {
+                    return ServiceResult.CreateFailure(updateResult.NonSuccessMessage);
+                }
+                
+                return ServiceResult.CreateSuccessResult();
+            }
+            catch (Exception e)
+            {
+                return ServiceResult.CreateFailure(e);
+            }
         }
 
         public async Task<ServiceResult> AddUserCourse(int userId, int courseId)
@@ -194,7 +240,7 @@ namespace BLL
             
                 if (course is null)
                 {
-                    string message = $"Course with id {userId} doesn't exist.";
+                    string message = $"Course with id {courseId} doesn't exist.";
                     
                     return ServiceResult.CreateFailure(message, 404);
                 }

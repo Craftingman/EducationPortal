@@ -16,7 +16,7 @@ namespace BLL.Abstractions
         
         Task<ServiceResult<bool>> UserExistsAsync(string email);
 
-        Task<ServiceResult> CompleteMaterial(int userId, int materialId);
+        Task<ServiceResult> CompleteMaterialAsync(int userId, int materialId);
 
         Task<ServiceResult> AddUserCourse(int userId, int courseId);
         
