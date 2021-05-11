@@ -1127,6 +1127,12 @@ namespace EducationPortalConsole
                 
                 Console.WriteLine("1. Выбрать материал");
                 Console.WriteLine("2. Удалить курс");
+
+                if (activeCourse.UncompletedMaterials.Count == 0)
+                {
+                    Console.WriteLine("3. Завершить курс");
+                }
+
                 Console.WriteLine("0. Выход");
                 Console.Write("Выберите пункт: ");
 
@@ -1160,6 +1166,25 @@ namespace EducationPortalConsole
                         Console.Clear();
                         Console.WriteLine("Успешно.");
                         Thread.Sleep(800);
+                        break;
+                    case 3: 
+                        if (activeCourse.UncompletedMaterials.Count == 0)
+                        {
+                            var result = _userService.CompleteCourseAsync(_currentUser.Id, course.Id).Result;
+                            if (!result.Success)
+                            {
+                                StartErrorMenu("Неизвестная ошибка. Попробуйте позже", out exitCoursesMenuFlag);
+                                break;
+                            }
+
+                            exitCoursesMenuFlag = true;
+                            Console.Clear();
+                            Console.WriteLine("Успешно.");
+                            Thread.Sleep(800);
+                            break;
+                        }
+                        
+                        DisplayWrongInput();
                         break;
                     default:
                         DisplayWrongInput();

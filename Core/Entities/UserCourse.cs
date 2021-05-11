@@ -4,6 +4,8 @@
     {
         public float Progress { get; set; }
 
+        public bool IsCompleted { get; set; } = false;
+
         public int UserId { get; set; }
 
         public int CourseId { get; set; }

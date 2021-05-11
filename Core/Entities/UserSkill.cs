@@ -2,7 +2,7 @@
 {
     public class UserSkill : BaseEntity
     {
-        public int Level { get; set; }
+        public int Level { get; set; } = 1;
 
         public int UserId { get; set; }
 

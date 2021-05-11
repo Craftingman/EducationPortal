@@ -15,10 +15,14 @@ namespace BLL.Abstractions
         Task<ServiceResult<bool>> HasRoleAsync(UserViewModel userShort, string role);
         
         Task<ServiceResult<bool>> UserExistsAsync(string email);
+        
+        Task<ServiceResult> CompleteCourseAsync(int userId, int courseId);
 
         Task<ServiceResult> CompleteMaterialAsync(int userId, int materialId);
 
         Task<ServiceResult> AddUserCourse(int userId, int courseId);
+
+        Task<ServiceResult> AddUserSkill(int userId, int skillId);
         
         Task<ServiceResult> RemoveUserCourse(int userId, int courseId);
 

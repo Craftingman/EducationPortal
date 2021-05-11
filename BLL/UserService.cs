@@ -29,6 +29,8 @@ namespace BLL
         private readonly IRepositoryBase<UserCourse> _userCourseRepository;
         
         private readonly IRepositoryBase<Material> _materialRepository;
+        
+        private readonly IRepositoryBase<Skill> _skillRepository;
 
         private readonly IUserValidator<User> _userValidator;
         
@@ -41,6 +43,7 @@ namespace BLL
             IRepositoryBase<Course> courseRepository,
             IRepositoryBase<Material> materialRepository,
             IRepositoryBase<UserCourse> userCourseRepository,
+            IRepositoryBase<Skill> skillRepository,
             IUserValidator<User> userValidator,
             IPasswordValidator<User> passwordValidator,
             IMapper mapper)
@@ -51,6 +54,7 @@ namespace BLL
             _materialRepository = materialRepository;
             _courseRepository = courseRepository;
             _userCourseRepository = userCourseRepository;
+            _skillRepository = skillRepository;
             _userValidator = userValidator;
             _passwordValidator = passwordValidator;
             _mapper = mapper;
@@ -165,6 +169,61 @@ namespace BLL
             }
         }
 
+        public async Task<ServiceResult> CompleteCourseAsync(int userId, int courseId)
+        {
+            try
+            {
+                var userResult = await _userRepository.FindAsync(userId);
+                
+                if (!userResult.Success)
+                {
+                    return ServiceResult.CreateFailure("Database error.");
+                }
+
+                User user = userResult.Result;
+
+                if (user is null)
+                {
+                    string message = $"User with id {userId} doesn't exist.";
+                    
+                    return ServiceResult.CreateFailure(message, 404);
+                }
+
+                UserCourse userCourse = user.UserCourses.FirstOrDefault(uc => uc.CourseId == courseId);
+            
+                if (userCourse is null)
+                {
+                    string message = $"User with id {userId} does not have course with id {courseId}.";
+                    
+                    return ServiceResult.CreateFailure(message, 404);
+                }
+
+                foreach (Skill skill in userCourse.Course.Skills)
+                {
+                    var result = await AddUserSkill(userId, skill.Id);
+
+                    if (!result.Success)
+                    {
+                        return ServiceResult.CreateFailure("Database error."); 
+                    }
+                }
+
+                userCourse.IsCompleted = true;
+                
+                var saveResult = await _userRepository.SaveAsync();
+                if (!saveResult.Success)
+                {
+                    return ServiceResult.CreateFailure("Database error.");
+                }
+
+                return ServiceResult.CreateSuccessResult();
+            }
+            catch (Exception e)
+            {
+                return ServiceResult.CreateFailure(e);
+            }
+        }
+
         public async Task<ServiceResult> CompleteMaterialAsync(int userId, int materialId)
         {
             try
@@ -259,6 +318,60 @@ namespace BLL
                     return ServiceResult.CreateFailure(updateResult.NonSuccessMessage);
                 }
                 
+                return ServiceResult.CreateSuccessResult();
+            }
+            catch (Exception e)
+            {
+                return ServiceResult.CreateFailure(e);
+            }
+        }
+
+        public async Task<ServiceResult> AddUserSkill(int userId, int skillId)
+        {
+            try
+            {
+                var skillResult = await _skillRepository.FindAsync(skillId);
+                var userResult = await _userRepository.FindAsync(userId);
+                
+                if (!userResult.Success || !skillResult.Success)
+                {
+                    return ServiceResult.CreateFailure("Database error.");
+                }
+
+                User user = userResult.Result;
+                Skill skill = skillResult.Result;
+                
+                if (user is null)
+                {
+                    string message = $"User with id {userId} doesn't exist.";
+                    
+                    return ServiceResult.CreateFailure(message, 404);
+                }
+            
+                if (skill is null)
+                {
+                    string message = $"Skill with id {skillId} doesn't exist.";
+                    
+                    return ServiceResult.CreateFailure(message, 404);
+                }
+
+                UserSkill userSkill = user.UserSkills.FirstOrDefault(us => us.SkillId == skillId);
+
+                if (userSkill is not null)
+                {
+                    userSkill.Level++;
+                }
+                else
+                {
+                    user.Skills.Add(skill);
+                }
+
+                var saveResult = await _userRepository.SaveAsync();
+                if (!saveResult.Success)
+                {
+                    return ServiceResult.CreateFailure("Database error.");
+                }
+
                 return ServiceResult.CreateSuccessResult();
             }
             catch (Exception e)
@@ -548,7 +661,7 @@ namespace BLL
                 Dictionary<CourseViewModel, float> dict = await Task.Run(() =>
                 {
                     return user.UserCourses
-                        .Where(uc => uc.Progress < 1)
+                        .Where(uc => !uc.IsCompleted)
                         .Where(uc => uc.Course.Name.Contains(searcStr))
                         .ToDictionary(uc => _mapper.Map<CourseViewModel>(uc.Course), 
                             uc => uc.Progress);
@@ -663,7 +776,7 @@ namespace BLL
                 IEnumerable<CourseViewModel> courses = await Task.Run(() =>
                 {
                     return user.UserCourses
-                        .Where(uc => uc.Progress == 1)
+                        .Where(uc => uc.IsCompleted)
                         .Select(uc => _mapper.Map<CourseViewModel>(uc.Course))
                         .Where(c => c.Name.Contains(searcStr))
                         .ToList();
