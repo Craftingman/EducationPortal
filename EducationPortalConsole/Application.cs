@@ -142,7 +142,14 @@ namespace EducationPortalConsole
                 Console.Clear();
                 Console.WriteLine("--- Курсы ---");
 
-                List<CourseViewModel> courses = _courseService.GetCoursesAsync(searchString).Result.Result.ToList();
+                var courseResult = _courseService.GetCoursesAsync(searchString).Result;
+                if (!courseResult.Success)
+                {
+                    StartErrorMenu("Неизвестная ошибка. Попробуйте позже", out exitCoursesMenuFlag);
+                    return;
+                }
+
+                List<CourseViewModel> courses = courseResult.Result.ToList();
                 
                 ShowCourses(courses);
                 
@@ -217,7 +224,7 @@ namespace EducationPortalConsole
                 bool isAdmin = _userService.HasRoleAsync(_currentUser, "admin").Result.Result;
                 bool isModer = _userService.HasRoleAsync(_currentUser, "moderator").Result.Result;
 
-                if (isAdmin || isModer)
+                if (isAdmin || isModer || course.CreatorId == _currentUser?.Id)
                 {
                     Console.WriteLine("2. Редактировать");
                     Console.WriteLine("3. Удалить");
@@ -249,7 +256,7 @@ namespace EducationPortalConsole
                         DisplayWrongInput();
                         break;
                     case 2:
-                        if (isAdmin || isModer)
+                        if (isAdmin || isModer ||  course.CreatorId == _currentUser?.Id)
                         {
                             EditCourseMenu(course);
                             break;
@@ -265,7 +272,7 @@ namespace EducationPortalConsole
                             Console.Write("Выберите пункт:");
                             if (ValidateChoise(Console.ReadLine()) == 1)
                             {
-                                if (_courseService.RemoveAsync(course).Result.Success)
+                                if (_courseService.RemoveAsync(course.Id).Result.Success)
                                 {
                                     exitCourseInfoMenuFlag = true;
                                     Console.WriteLine("Успешно.");
@@ -353,8 +360,8 @@ namespace EducationPortalConsole
                 Console.WriteLine($"Название: {course.Name}");
                 Console.WriteLine($"Описание: {course.Description}");
 
-                var skillsResult = _courseService.GetCourseSkillsAsync(course).Result;
-                var materialsResult = _courseService.GetCourseMaterialsAsync(course).Result;
+                var skillsResult = _courseService.GetCourseSkillsAsync(course.Id).Result;
+                var materialsResult = _courseService.GetCourseMaterialsAsync(course.Id).Result;
 
                 Console.WriteLine($"Навыки:");
                 List<SkillViewModel> skills = new List<SkillViewModel>();
@@ -390,7 +397,7 @@ namespace EducationPortalConsole
                         SkillViewModel skill = StartSkillMenu();
                         if (skill != null)
                         {
-                            var result = _courseService.AddSkillAsync(course, skill);
+                            var result = _courseService.AddSkillAsync(course.Id, skill.Id);
                             if (result.Result.Success)
                             {
                                 Console.Clear();
@@ -407,7 +414,7 @@ namespace EducationPortalConsole
                         if (skillChoise >= 0 && skillChoise < skills.Count)
                         {
                             Console.Clear();
-                            var result = _courseService.RemoveSkillAsync(course, skills[skillChoise]);
+                            var result = _courseService.RemoveSkillAsync(course.Id, skills[skillChoise].Id);
                             if (result.Result.Success)
                             {
                                 Console.WriteLine("Успешно.");
@@ -424,7 +431,7 @@ namespace EducationPortalConsole
                         MaterialViewModel material = StartMaterialMenu();
                         if (material != null)
                         {
-                           var result = _courseService.AddMaterialAsync(course ,material);
+                           var result = _courseService.AddMaterialAsync(course.Id ,material.Id);
                            if (result.Result.Success)
                            {
                                Console.Clear();
@@ -441,7 +448,7 @@ namespace EducationPortalConsole
                         if (choise >= 0 && choise < materials.Count)
                         {
                             Console.Clear();
-                            var result = _courseService.RemoveMaterialAsync(course, materials[choise]);
+                            var result = _courseService.RemoveMaterialAsync(course.Id, materials[choise].Id);
                             if (result.Result.Success)
                             {
                                 Console.WriteLine("Успешно.");
@@ -890,7 +897,7 @@ namespace EducationPortalConsole
             Console.WriteLine($"Название: {course.Name}\n");
             Console.WriteLine($"Описание: {course.Description}\n");
             
-            var result = _courseService.GetCourseSkillsAsync(course).Result;
+            var result = _courseService.GetCourseSkillsAsync(course.Id).Result;
 
             Console.WriteLine($"Навыки: ");
             if (result.Success)
@@ -1064,7 +1071,7 @@ namespace EducationPortalConsole
                     Console.WriteLine($"Год публикации: {((BookViewModel)materialFull).PublishYear}");
                 } else if (materialType == typeof(ArticleViewModel))
                 {
-                    Console.WriteLine($"Формат: {((ArticleViewModel)materialFull).PublishDate.ToString()}");
+                    Console.WriteLine($"Дата публикации: {((ArticleViewModel)materialFull).PublishDate.ToString()}");
                     Console.WriteLine($"Источник: {((ArticleViewModel)materialFull).Source}");
                 } else if (materialType == typeof(VideoViewModel))
                 {
@@ -1073,7 +1080,8 @@ namespace EducationPortalConsole
                                       $"{((VideoViewModel)materialFull).Duration.Seconds}");
                     Console.WriteLine($"Разрешение: {((VideoViewModel)materialFull).Resolution}");
                 }
-
+                
+                Console.WriteLine();
                 Console.WriteLine("1. Пройти материал");
                 Console.WriteLine("0. Выход");
                 Console.Write("Выберите пункт: ");
@@ -1293,6 +1301,77 @@ namespace EducationPortalConsole
             }
         }
 
+        private void StartCreatedCoursesMenu()
+        {
+            bool exitCoursesMenuFlag = false;
+            string searchString = "";
+
+            while (!exitCoursesMenuFlag)
+            {
+                Console.Clear();
+                Console.Clear();
+                Console.WriteLine("--- Созданные Курсы ---");
+
+                var coursesResult = _userService.GetCreatedCoursesAsync(_currentUser.Id, searchString).Result;
+                if (!coursesResult.Success)
+                {
+                    StartErrorMenu("Неизвестная ошибка. Попробуйте позже", out exitCoursesMenuFlag);
+                    return;
+                }
+
+                List<CourseViewModel> courses = coursesResult.Result.ToList();
+                
+                ShowCourses(courses);
+                
+                Console.WriteLine("1. Поиск");
+                Console.WriteLine("2. Выбрать курс");
+
+                if (_currentUser != null)
+                {
+                    Console.WriteLine("3. Добавить курс");
+                }
+
+                Console.WriteLine("0. Выход");
+                Console.Write("Выберите пункт: ");
+                
+                switch (ValidateChoise(Console.ReadLine()))
+                {
+                    case 0:
+                        exitCoursesMenuFlag = true;
+                        break;
+                    case 1:
+                        Console.WriteLine($"Поисковая строка сейчас: \'{searchString}\'");
+                        Console.Write($"Введите часть названия курса: ");
+                        searchString = Console.ReadLine();
+                        break;
+                    case 2:
+                        Console.Write("Введите номер курса: ");
+                        int choise = ValidateChoise(Console.ReadLine());
+                        
+                        if (choise >= 0 && choise < courses.Count)
+                        {
+                            StartCourseInfoMenu(courses[choise]);
+                            break;
+                        }
+                        
+                        Console.WriteLine("Неверный номер курса.");
+                        Thread.Sleep(800);
+                        break;
+                    case 3:
+                        if (_currentUser != null)
+                        {
+                            AddCourse();
+                            break;
+                        }
+                        DisplayWrongInput();
+                        break;
+                    default:
+                        DisplayWrongInput();
+                        break;
+                }
+            }
+        }
+
         private void StartUserCourseMenu()
         {
             Console.Clear();
@@ -1307,6 +1386,7 @@ namespace EducationPortalConsole
                 case 0:
                     return;
                 case 1:
+                    StartCreatedCoursesMenu();
                     break;
                 case 2:
                     StartActiveCoursesMenu();
@@ -1322,7 +1402,47 @@ namespace EducationPortalConsole
 
         private void ShowUserStatistics()
         {
+            Console.Clear();
+            Console.WriteLine("--- Моя Статистика ---\n");
+
+            bool plug = false;
+
+            var coursesResult = _userService.GetCoursesAsync(_currentUser.Id, "").Result;
+            var completedCoursesResult = _userService.GetCompletedCoursesAsync(_currentUser.Id, "").Result;
+            var userSkillsResult = _userService.GetUserSkills(_currentUser.Id).Result;
             
+            if (!coursesResult.Success)
+            {
+                StartErrorMenu("Неизвестная ошибка. Попробуйте позже", out plug);
+                return;
+            }
+            if (!completedCoursesResult.Success)
+            {
+                StartErrorMenu("Неизвестная ошибка. Попробуйте позже", out plug);
+                return;
+            }
+            if (!userSkillsResult.Success)
+            {
+                StartErrorMenu("Неизвестная ошибка. Попробуйте позже", out plug);
+                return;
+            }
+
+            int coursesCount = coursesResult.Result.Count;
+            int completedCoursesCount = completedCoursesResult.Result.Count();
+            Dictionary<SkillViewModel, int> skillsDict = userSkillsResult.Result;
+            
+            Console.WriteLine($"Всего курсов начато: {coursesCount}");
+            Console.WriteLine($"Из них пройдено: {completedCoursesCount}");
+            Console.WriteLine("\nМои навыки:\n");
+
+            foreach (var item in skillsDict)
+            {
+                Console.WriteLine($"- {item.Key.Name}  Уровень: {item.Value}");
+            }
+            
+            Console.WriteLine("\n0. Назад");
+            Console.Write("Выберите пункт: ");
+            Console.ReadLine();
         }
 
         private void RegisterAccount()

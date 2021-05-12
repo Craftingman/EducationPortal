@@ -10,22 +10,22 @@ namespace BLL.Abstractions
     {
         public Task<ServiceResult> CreateAsync(CourseViewModel courseShort, UserViewModel creator = null);
 
-        public Task<ServiceResult> RemoveAsync(CourseViewModel courseShort);
+        public Task<ServiceResult> RemoveAsync(int courseId);
 
         public Task<ServiceResult<IEnumerable<CourseViewModel>>> GetCoursesAsync(string searchStr);
 
-        public Task<ServiceResult<IEnumerable<SkillViewModel>>> GetCourseSkillsAsync(CourseViewModel courseShort);
+        public Task<ServiceResult<IEnumerable<SkillViewModel>>> GetCourseSkillsAsync(int courseId);
         
-        public Task<ServiceResult<IEnumerable<MaterialViewModel>>> GetCourseMaterialsAsync(CourseViewModel courseShort);
+        public Task<ServiceResult<IEnumerable<MaterialViewModel>>> GetCourseMaterialsAsync(int courseId);
 
         public Task<ServiceResult> UpdateCourseInfoAsync(CourseViewModel courseShort);
 
-        public Task<ServiceResult> AddMaterialAsync(CourseViewModel courseShort, MaterialViewModel materialShort);
+        public Task<ServiceResult> AddMaterialAsync(int courseId, int materialId);
         
-        public Task<ServiceResult> RemoveMaterialAsync(CourseViewModel courseShort, MaterialViewModel materialShort);
+        public Task<ServiceResult> RemoveMaterialAsync(int courseId, int materialId);
         
-        public Task<ServiceResult> AddSkillAsync(CourseViewModel courseShort, SkillViewModel skillShort);
+        public Task<ServiceResult> AddSkillAsync(int courseId, int skillId);
         
-        public Task<ServiceResult> RemoveSkillAsync(CourseViewModel courseShort, SkillViewModel skillShort);
+        public Task<ServiceResult> RemoveSkillAsync(int courseId, int skillId);
     }
 }

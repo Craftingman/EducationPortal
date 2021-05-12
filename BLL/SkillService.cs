@@ -9,6 +9,7 @@ using Core.Entities;
 using Core.ViewModels;
 using DAL.Abstractions;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace BLL
 {
@@ -20,14 +21,18 @@ namespace BLL
 
         private readonly IMapper _mapper;
         
+        private readonly ILogger _logger;
+        
         public SkillService(
             IRepositoryBase<Skill> skillRepository,
             IConfiguration configuration,
-            IMapper mapper)
+            IMapper mapper,
+            ILogger<SkillService> logger)
         {
             _skillRepository = skillRepository;
             _configuration = configuration;
             _mapper = mapper;
+            _logger = logger;
         }
         
         public async Task<ServiceResult<IEnumerable<SkillViewModel>>> GetSkillsAsync(string searchStr = "")
@@ -36,16 +41,20 @@ namespace BLL
             {
                 var result = await _skillRepository.FindByConditionAsync(s => s.Name.Contains(searchStr));
 
-                if (result.Success)
+                if (!result.Success)
                 {
-                    return ServiceResult<IEnumerable<SkillViewModel>>.CreateSuccessResult(
-                        _mapper.Map<IEnumerable<SkillViewModel>>(result.Result.ToList()));
+                    _logger.LogError(result.NonSuccessMessage);
+                    
+                    return ServiceResult<IEnumerable<SkillViewModel>>.CreateFailure("Database error.");
                 }
                 
-                return ServiceResult<IEnumerable<SkillViewModel>>.CreateFailure(result.Exception);
+                return ServiceResult<IEnumerable<SkillViewModel>>.CreateSuccessResult(
+                    _mapper.Map<IEnumerable<SkillViewModel>>(result.Result.ToList()));
             }
             catch (Exception e)
             {
+                _logger.LogError(e.Message);
+
                 return ServiceResult<IEnumerable<SkillViewModel>>.CreateFailure(e);
             }
         }
@@ -54,6 +63,8 @@ namespace BLL
         {
             if (skillShort == null)
             {
+                _logger.LogError("Skill is null.");
+                
                 return ServiceResult.CreateFailure("Skill is null.");
             }
             
@@ -62,20 +73,27 @@ namespace BLL
                 Skill skill = _mapper.Map<Skill>(skillShort);
 
                 var result = _skillRepository.Create(skill);
-                if (result.Success)
+                if (!result.Success)
                 {
-                    var saveResult = await _skillRepository.SaveAsync();
-                    if (saveResult.Success)
-                    {
-                        return ServiceResult.CreateSuccessResult();
-                    }
+                    _logger.LogError(result.NonSuccessMessage);
+                    
                     return ServiceResult.CreateFailure("Database error.");
                 }
                 
-                return ServiceResult.CreateFailure("Database error.");
+                var saveResult = await _skillRepository.SaveAsync();
+                if (!saveResult.Success)
+                {
+                    _logger.LogError(saveResult.NonSuccessMessage);
+                    
+                    return ServiceResult.CreateFailure("Database error.");
+                }
+                
+                return ServiceResult.CreateSuccessResult();
             }
             catch (Exception e)
             {
+                _logger.LogError(e.Message);
+
                 return ServiceResult.CreateFailure(e);
             }
         }

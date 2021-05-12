@@ -10,6 +10,7 @@ using Core.Entities;
 using Core.ViewModels;
 using DAL.Abstractions;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace BLL
 {
@@ -20,15 +21,19 @@ namespace BLL
         private readonly IConfiguration _configuration;
 
         private readonly IMapper _mapper;
+
+        private readonly ILogger _logger;
         
         public MaterialService(
             IRepositoryBase<Material> materialRepository,
             IConfiguration configuration,
-            IMapper mapper)
+            IMapper mapper,
+            ILogger<MaterialService> logger)
         {
             _materialRepository = materialRepository;
             _configuration = configuration;
             _mapper = mapper;
+            _logger = logger;
         }
 
 
@@ -40,6 +45,8 @@ namespace BLL
 
                 if (!result.Success)
                 {
+                    _logger.LogError(result.NonSuccessMessage);
+                    
                     return ServiceResult<IEnumerable<MaterialViewModel>>.CreateFailure("Database error.");
                 }
 
@@ -48,6 +55,8 @@ namespace BLL
             }
             catch (Exception e)
             {
+                _logger.LogError(e.Message);
+                
                 return ServiceResult<IEnumerable<MaterialViewModel>>.CreateFailure(e);
             }
         }
@@ -56,6 +65,8 @@ namespace BLL
         {
             if (materialShort == null)
             {
+                _logger.LogError("Material is null.");
+                
                 return ServiceResult.CreateFailure("Material is null.");
             }
             
@@ -77,24 +88,33 @@ namespace BLL
                 }
                 else
                 {
+                    _logger.LogError("Incorrect material type.");
+                    
                     return ServiceResult.CreateFailure("Incorrect material type.");
                 }
 
                 var result = _materialRepository.Create(material);
-                if (result.Success)
+                if (!result.Success)
                 {
-                    var saveResult = await _materialRepository.SaveAsync();
-                    if (saveResult.Success)
-                    {
-                        return ServiceResult.CreateSuccessResult();
-                    }
+                    _logger.LogError(result.NonSuccessMessage);
+                    
                     return ServiceResult.CreateFailure("Database error.");
                 }
                 
-                return ServiceResult.CreateFailure("Database error.");
+                var saveResult = await _materialRepository.SaveAsync();
+                if (!saveResult.Success)
+                {
+                    _logger.LogError(saveResult.NonSuccessMessage);
+                    
+                    return ServiceResult.CreateFailure("Database error.");
+                }
+                
+                return ServiceResult.CreateSuccessResult();
             }
             catch (Exception e)
             {
+                _logger.LogError(e.Message);
+
                 return ServiceResult.CreateFailure(e);
             }
         }
@@ -107,6 +127,8 @@ namespace BLL
                 
                 if (!materialResult.Success)
                 {
+                    _logger.LogError(materialResult.NonSuccessMessage);
+                    
                     return ServiceResult<MaterialViewModel>.CreateFailure("Database error.");
                 }
 
@@ -115,6 +137,8 @@ namespace BLL
                 if (material is null)
                 {
                     string message = $"Material with id {materialId} doesn't exist.";
+                    
+                    _logger.LogError(message);
                     
                     return ServiceResult<MaterialViewModel>.CreateFailure(message, 404);
                 }
@@ -137,10 +161,14 @@ namespace BLL
                         _mapper.Map<VideoViewModel>((Video)material));
                 }
                 
+                _logger.LogError("Incorrect material type.");
+                
                 return ServiceResult<MaterialViewModel>.CreateFailure("Incorrect material type.");
             } 
             catch (Exception e)
             {
+                _logger.LogError(e.Message);
+
                 return ServiceResult<MaterialViewModel>.CreateFailure(e);
             }
         }

@@ -10,6 +10,7 @@ using Core.Entities;
 using Core.ViewModels;
 using DAL.Abstractions;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace BLL
 {
@@ -26,6 +27,8 @@ namespace BLL
         private readonly IConfiguration _configuration;
 
         private readonly IMapper _mapper;
+        
+        private readonly ILogger _logger;
 
         public CourseService(
             IRepositoryBase<Course> courseRepository,
@@ -33,7 +36,8 @@ namespace BLL
             IRepositoryBase<Skill> skillRepository,
             IRepositoryBase<User> userRepository,
             IConfiguration configuration,
-            IMapper mapper)
+            IMapper mapper,
+            ILogger<CourseService> logger)
         {
             _courseRepository = courseRepository;
             _materialRepository = materialRepository;
@@ -41,12 +45,15 @@ namespace BLL
             _userRepository = userRepository;
             _configuration = configuration;
             _mapper = mapper;
+            _logger = logger;
         }
         
         public async Task<ServiceResult> CreateAsync(CourseViewModel courseShort, UserViewModel creator)
         {
             if (courseShort == null)
             {
+                _logger.LogError("Course is null.");
+                
                 return ServiceResult.CreateFailure("Course is null.");
             }
 
@@ -67,56 +74,75 @@ namespace BLL
                 }
 
                 var result = _courseRepository.Create(course);
-                if (result.Success)
+                if (!result.Success)
                 {
-                    var saveResult = await _courseRepository.SaveAsync();
-                    if (saveResult.Success)
-                    {
-                        courseShort.Id = course.Id;
-                        return ServiceResult.CreateSuccessResult();
-                    }
+                    _logger.LogError(result.NonSuccessMessage);
+                    
                     return ServiceResult.CreateFailure("Database error.");
                 }
                 
-                return ServiceResult.CreateFailure("Database error.");
+                var saveResult = await _courseRepository.SaveAsync();
+                if (!saveResult.Success)
+                {
+                    _logger.LogError(saveResult.NonSuccessMessage);
+                    
+                    return ServiceResult.CreateFailure("Database error.");
+                }
+                
+                courseShort.Id = course.Id;
+                return ServiceResult.CreateSuccessResult();
             }
             catch (Exception e)
             {
+                _logger.LogError(e.Message);
+
                 return ServiceResult.CreateFailure(e);
             }
         }
 
-        public async Task<ServiceResult> RemoveAsync(CourseViewModel courseShort)
+        public async Task<ServiceResult> RemoveAsync(int courseId)
         {
-            if (courseShort == null)
-            {
-                return ServiceResult.CreateFailure("Course is null.");
-            }
-
             try
             {
-                var findResult = await _courseRepository.FindAsync(courseShort.Id);
+                var findResult = await _courseRepository.FindAsync(courseId);
                 if (!findResult.Success)
                 {
+                    _logger.LogError(findResult.NonSuccessMessage);
+                    
                     return ServiceResult.CreateFailure("Database error.");
+                }
+
+                Course course = findResult.Result;
+
+                if (course is null)
+                {
+                    _logger.LogError($"Course with id {courseId} doesn't exist.");
+                    
+                    return ServiceResult.CreateFailure($"Course with id {courseId} doesn't exist.");
                 }
 
                 var result = _courseRepository.Delete(findResult.Result);
-
-                if (result.Success)
+                if (!result.Success)
                 {
-                    var saveResult = await _courseRepository.SaveAsync();
-                    if (saveResult.Success)
-                    {
-                        return ServiceResult.CreateSuccessResult();
-                    }
+                    _logger.LogError(result.NonSuccessMessage);
+                    
+                    return ServiceResult.CreateFailure("Database error.");
+                }
+                
+                var saveResult = await _courseRepository.SaveAsync();
+                if (!saveResult.Success)
+                {
+                    _logger.LogError(saveResult.NonSuccessMessage);
+                    
                     return ServiceResult.CreateFailure("Database error.");
                 }
 
-                return ServiceResult.CreateFailure("Database error.");
+                return ServiceResult.CreateSuccessResult();
             }
             catch (Exception e)
             {
+                _logger.LogError(e.Message);
+
                 return ServiceResult.CreateFailure(e);
             }
         }
@@ -126,62 +152,96 @@ namespace BLL
             try
             {
                 var result = await _courseRepository.FindByConditionAsync(c => c.Name.Contains(searchStr));
-
-                if (result.Success)
+                if (!result.Success)
                 {
-                    return ServiceResult<IEnumerable<CourseViewModel>>.CreateSuccessResult(
-                        _mapper.Map<IEnumerable<CourseViewModel>>(result.Result.ToList()));
+                    _logger.LogError(result.NonSuccessMessage);
+                    
+                    return ServiceResult<IEnumerable<CourseViewModel>>.CreateFailure("Database error.");
                 }
-                
-                return ServiceResult<IEnumerable<CourseViewModel>>.CreateFailure(result.Exception);
+
+                IEnumerable<Course> courses = result.Result;
+                if (courses is null)
+                {
+                    courses = new List<Course>();
+                }
+
+                return ServiceResult<IEnumerable<CourseViewModel>>.CreateSuccessResult(
+                    _mapper.Map<IEnumerable<CourseViewModel>>(courses.ToList()));
             }
             catch (Exception e)
             {
+                _logger.LogError(e.Message);
+
                 return ServiceResult<IEnumerable<CourseViewModel>>.CreateFailure(e);
             }
         }
 
-        public async Task<ServiceResult<IEnumerable<SkillViewModel>>> GetCourseSkillsAsync(CourseViewModel courseShort)
+        public async Task<ServiceResult<IEnumerable<SkillViewModel>>> GetCourseSkillsAsync(int courseId)
         {
             try
             {
-                var result = await _courseRepository.FindAsync(courseShort.Id);
-
-                if (result.Success)
+                var result = await _courseRepository.FindAsync(courseId);
+                if (!result.Success)
                 {
-                    Course course = result.Result;
-                    IEnumerable<Skill> skills = course.Skills.ToList();
+                    _logger.LogError(result.NonSuccessMessage);
                     
-                    return ServiceResult<IEnumerable<SkillViewModel>>.CreateSuccessResult(
-                        _mapper.Map<IEnumerable<SkillViewModel>>(skills));
+                    return ServiceResult<IEnumerable<SkillViewModel>>.CreateFailure("Database error.");
                 }
                 
-                return ServiceResult<IEnumerable<SkillViewModel>>.CreateFailure(result.Exception);
+                Course course = result.Result;
+
+                if (course is null)
+                {
+                    _logger.LogError($"Course with id {courseId} doesn't exist.");
+                    
+                    return ServiceResult<IEnumerable<SkillViewModel>>
+                        .CreateFailure($"Course with id {courseId} doesn't exist.");
+                }
+
+                IEnumerable<Skill> skills = course.Skills.ToList();
+
+                return ServiceResult<IEnumerable<SkillViewModel>>.CreateSuccessResult(
+                    _mapper.Map<IEnumerable<SkillViewModel>>(skills));
             }
             catch (Exception e)
             {
+                _logger.LogError(e.Message);
+
                 return ServiceResult<IEnumerable<SkillViewModel>>.CreateFailure(e);
             }
         }
         
-        public async Task<ServiceResult<IEnumerable<MaterialViewModel>>> GetCourseMaterialsAsync(CourseViewModel courseShort)
+        public async Task<ServiceResult<IEnumerable<MaterialViewModel>>> GetCourseMaterialsAsync(int courseId)
         {
             try
             {
-                var result = await _courseRepository.FindAsync(courseShort.Id);
-
-                IEnumerable<Material> materials = result.Result.Materials;
-
-                if (result.Success)
+                var result = await _courseRepository.FindAsync(courseId);
+                if (!result.Success)
                 {
-                    return ServiceResult<IEnumerable<MaterialViewModel>>.CreateSuccessResult(
-                        _mapper.Map<IEnumerable<MaterialViewModel>>(materials));
+                    _logger.LogError(result.NonSuccessMessage);
+                    
+                    return ServiceResult<IEnumerable<MaterialViewModel>>.CreateFailure("Database error.");
                 }
                 
-                return ServiceResult<IEnumerable<MaterialViewModel>>.CreateFailure(result.Exception);
+                Course course = result.Result;
+
+                if (course is null)
+                {
+                    _logger.LogError($"Course with id {courseId} doesn't exist.");
+                    
+                    return ServiceResult<IEnumerable<MaterialViewModel>>
+                        .CreateFailure($"Course with id {courseId} doesn't exist.");
+                }
+                
+                IEnumerable<Material> materials = course.Materials.ToList();
+                
+                return ServiceResult<IEnumerable<MaterialViewModel>>.CreateSuccessResult(
+                    _mapper.Map<IEnumerable<MaterialViewModel>>(materials));
             }
             catch (Exception e)
             {
+                _logger.LogError(e.Message);
+
                 return ServiceResult<IEnumerable<MaterialViewModel>>.CreateFailure(e);
             }
         }
@@ -190,191 +250,259 @@ namespace BLL
         {
             if (courseShort == null)
             {
+                _logger.LogError("Course is null");
+                
                 return ServiceResult.CreateFailure("Course is null.");
             }
 
             try
             {
                 var result = await _courseRepository.FindAsync(courseShort.Id);
-                if (result.Success)
+                if (!result.Success)
                 {
-                    result.Result.Name = courseShort.Name;
-                    result.Result.Description = courseShort.Description;
+                    _logger.LogError(result.NonSuccessMessage);
                     
-                    var saveResult = await _courseRepository.SaveAsync();
-                    if (saveResult.Success)
-                    {
-                        return ServiceResult.CreateSuccessResult();
-                    }
                     return ServiceResult.CreateFailure("Database error.");
                 }
 
-                return ServiceResult.CreateFailure("Database error.");
+                Course course = result.Result;
+                
+                if (course is null)
+                {
+                    _logger.LogError($"Course with id {courseShort.Id} doesn't exist.");
+                    
+                    return ServiceResult.CreateFailure($"Course with id {courseShort.Id} doesn't exist.");
+                }
+                
+                course.Name = courseShort.Name;
+                course.Description = courseShort.Description;
+                    
+                var saveResult = await _courseRepository.SaveAsync();
+                if (!saveResult.Success)
+                {
+                    _logger.LogError(saveResult.NonSuccessMessage);
+                    
+                    return ServiceResult.CreateFailure("Database error.");
+                }
+                
+                return ServiceResult.CreateSuccessResult();
             }
             catch (Exception e)
             {
+                _logger.LogError(e.Message);
+
                 return ServiceResult.CreateFailure(e);
             }
         }
 
-        public async Task<ServiceResult> AddMaterialAsync(CourseViewModel courseShort, MaterialViewModel materialShort)
+        public async Task<ServiceResult> AddMaterialAsync(int courseId, int materialId)
         {
-            if (materialShort == null)
-            {
-                return ServiceResult.CreateFailure("Material is null.");
-            }
-            if (courseShort == null)
-            {
-                return ServiceResult.CreateFailure("Course is null.");
-            }
-            
             try
             {
-                var courseResult = await _courseRepository.FindAsync(courseShort.Id);
-                var materialResult =  await _materialRepository.FindAsync(materialShort.Id);
+                var courseResult = await _courseRepository.FindAsync(courseId);
+                var materialResult =  await _materialRepository.FindAsync(materialId);
 
                 if (!courseResult.Success || !materialResult.Success)
                 {
+                    _logger.LogError(
+                        String.Concat(materialResult.NonSuccessMessage, courseResult.NonSuccessMessage));
+                    
                     return ServiceResult.CreateFailure("Database error.");
                 }
 
-                ICollection<Material> courseMaterials = courseResult.Result.Materials;
-                courseMaterials.Add(materialResult.Result);
-                
-                _courseRepository.Update(courseResult.Result);
-                
-                var saveResult = await _courseRepository.SaveAsync();
-                if (saveResult.Success)
+                Course course = courseResult.Result;
+                Material material = materialResult.Result;
+
+                if (course is null)
                 {
-                    return ServiceResult.CreateSuccessResult();
+                    _logger.LogError($"Course with id {courseId} doesn't exist.");
+                    
+                    return ServiceResult.CreateFailure($"Course with id {courseId} doesn't exist.");
                 }
                 
-                return ServiceResult.CreateFailure("Database error.");
+                if (material is null)
+                {
+                    _logger.LogError($"Material with id {materialId} doesn't exist.");
+                    
+                    return ServiceResult.CreateFailure($"Material with id {materialId} doesn't exist.");
+                }
+
+                course.Materials.Add(material);
+
+                var saveResult = await _courseRepository.SaveAsync();
+                if (!saveResult.Success)
+                {
+                    _logger.LogError(saveResult.NonSuccessMessage);
+                    
+                    return ServiceResult.CreateFailure("Database error.");
+                }
+                
+                return ServiceResult.CreateSuccessResult();
             }
             catch (Exception e)
             {
+                _logger.LogError(e.Message);
+
                 return ServiceResult.CreateFailure(e);
             }
         }
 
-        public async Task<ServiceResult> RemoveMaterialAsync(CourseViewModel courseShort, MaterialViewModel materialShort)
+        public async Task<ServiceResult> RemoveMaterialAsync(int courseId, int materialId)
         {
-            if (materialShort == null)
-            {
-                return ServiceResult.CreateFailure("Material is null.");
-            }
-            if (courseShort == null)
-            {
-                return ServiceResult.CreateFailure("Course is null.");
-            }
-            
             try
             {
-                var courseResult = await _courseRepository.FindAsync(courseShort.Id);
-                var materialResult =  await _materialRepository.FindAsync(materialShort.Id);
+                var courseResult = await _courseRepository.FindAsync(courseId);
+                var materialResult =  await _materialRepository.FindAsync(materialId);
 
                 if (!courseResult.Success || !materialResult.Success)
                 {
+                    _logger.LogError(
+                        String.Concat(materialResult.NonSuccessMessage, courseResult.NonSuccessMessage));
+                    
+                    return ServiceResult.CreateFailure("Database error.");
+                }
+
+                Course course = courseResult.Result;
+                Material material = materialResult.Result;
+
+                if (course is null)
+                {
+                    _logger.LogError($"Course with id {courseId} doesn't exist.");
+                    
+                    return ServiceResult.CreateFailure($"Course with id {courseId} doesn't exist.");
+                }
+                
+                if (material is null)
+                {
+                    _logger.LogError($"Material with id {materialId} doesn't exist.");
+                    
+                    return ServiceResult.CreateFailure($"Material with id {materialId} doesn't exist.");
+                }
+                
+                course.Materials
+                    .Remove(course.Materials
+                        .FirstOrDefault(m => m.Id == material.Id));
+
+                var saveResult = await _courseRepository.SaveAsync();
+                if (!saveResult.Success)
+                {
+                    _logger.LogError(saveResult.NonSuccessMessage);
+                    
                     return ServiceResult.CreateFailure("Database error.");
                 }
                 
-                courseResult.Result.Materials
-                    .Remove(courseResult.Result.Materials
-                        .FirstOrDefault(m => m.Id == materialResult.Result.Id));
-
-                _courseRepository.Update(courseResult.Result);
-                
-                var saveResult = await _courseRepository.SaveAsync();
-                if (saveResult.Success)
-                {
-                    return ServiceResult.CreateSuccessResult();
-                }
-                
-                return ServiceResult.CreateFailure("Database error.");
+                return ServiceResult.CreateSuccessResult();
             }
             catch (Exception e)
             {
+                _logger.LogError(e.Message);
+
                 return ServiceResult.CreateFailure(e);
             }
         }
 
-        public async Task<ServiceResult> AddSkillAsync(CourseViewModel courseShort, SkillViewModel skillShort)
+        public async Task<ServiceResult> AddSkillAsync(int courseId, int skillId)
         {
-            if (skillShort == null)
-            {
-                return ServiceResult.CreateFailure("Material is null.");
-            }
-            if (courseShort == null)
-            {
-                return ServiceResult.CreateFailure("Course is null.");
-            }
-            
             try
             {
-                var courseResult = await _courseRepository.FindAsync(courseShort.Id);
-                var skillResult =  await _skillRepository.FindAsync(skillShort.Id);
+                var courseResult = await _courseRepository.FindAsync(courseId);
+                var skillResult =  await _skillRepository.FindAsync(skillId);
 
                 if (!courseResult.Success || !skillResult.Success)
                 {
+                    _logger.LogError(
+                        String.Concat(skillResult.NonSuccessMessage, courseResult.NonSuccessMessage));
+                    
                     return ServiceResult.CreateFailure("Database error.");
                 }
 
-                ICollection<Skill> courseSkills = courseResult.Result.Skills;
-                courseSkills.Add(skillResult.Result);
-                
-                _courseRepository.Update(courseResult.Result);
-                
-                var saveResult = await _courseRepository.SaveAsync();
-                if (saveResult.Success)
+                Course course = courseResult.Result;
+                Skill skill = skillResult.Result;
+
+                if (course is null)
                 {
-                    return ServiceResult.CreateSuccessResult();
+                    _logger.LogError($"Course with id {courseId} doesn't exist.");
+                    
+                    return ServiceResult.CreateFailure($"Course with id {courseId} doesn't exist.");
                 }
                 
-                return ServiceResult.CreateFailure("Database error.");
+                if (skill is null)
+                {
+                    _logger.LogError($"Skill with id {skillId} doesn't exist.");
+                    
+                    return ServiceResult.CreateFailure($"Skill with id {skillId} doesn't exist.");
+                }
+
+                course.Skills.Add(skill);
+
+                var saveResult = await _courseRepository.SaveAsync();
+                if (!saveResult.Success)
+                {
+                    _logger.LogError(saveResult.NonSuccessMessage);
+                    
+                    return ServiceResult.CreateFailure("Database error.");
+                }
+                
+                return ServiceResult.CreateSuccessResult();
             }
             catch (Exception e)
             {
+                _logger.LogError(e.Message);
+
                 return ServiceResult.CreateFailure(e);
             }
         }
 
-        public async Task<ServiceResult> RemoveSkillAsync(CourseViewModel courseShort, SkillViewModel skillShort)
+        public async Task<ServiceResult> RemoveSkillAsync(int courseId, int skillId)
         {
-            if (skillShort == null)
-            {
-                return ServiceResult.CreateFailure("Material is null.");
-            }
-            if (courseShort == null)
-            {
-                return ServiceResult.CreateFailure("Course is null.");
-            }
-            
             try
             {
-                var courseResult = await _courseRepository.FindAsync(courseShort.Id);
-                var skillResult =  await _skillRepository.FindAsync(skillShort.Id);
+                var courseResult = await _courseRepository.FindAsync(courseId);
+                var skillResult =  await _skillRepository.FindAsync(skillId);
 
                 if (!courseResult.Success || !skillResult.Success)
                 {
+                    _logger.LogError(
+                        String.Concat(skillResult.NonSuccessMessage, courseResult.NonSuccessMessage));
+                    
                     return ServiceResult.CreateFailure("Database error.");
                 }
 
-                courseResult.Result.Skills
-                    .Remove(courseResult.Result.Skills
-                        .FirstOrDefault(m => m.Id == skillResult.Result.Id));
+                Course course = courseResult.Result;
+                Skill skill = skillResult.Result;
 
-                _courseRepository.Update(courseResult.Result);
-                
-                var saveResult = await _courseRepository.SaveAsync();
-                if (saveResult.Success)
+                if (course is null)
                 {
-                    return ServiceResult.CreateSuccessResult();
+                    _logger.LogError($"Course with id {courseId} doesn't exist.");
+                    
+                    return ServiceResult.CreateFailure($"Course with id {courseId} doesn't exist.");
                 }
                 
-                return ServiceResult.CreateFailure("Database error.");
+                if (skill is null)
+                {
+                    _logger.LogError($"Skill with id {skillId} doesn't exist.");
+                    
+                    return ServiceResult.CreateFailure($"Skill with id {skillId} doesn't exist.");
+                }
+
+                course.Skills
+                    .Remove(course.Skills
+                        .FirstOrDefault(m => m.Id == skillId));
+
+                var saveResult = await _courseRepository.SaveAsync();
+                if (!saveResult.Success)
+                {
+                    _logger.LogError(saveResult.NonSuccessMessage);
+                    
+                    return ServiceResult.CreateFailure("Database error.");
+                }
+
+                return ServiceResult.CreateSuccessResult();
             }
             catch (Exception e)
             {
+                _logger.LogError(e.Message);
+
                 return ServiceResult.CreateFailure(e);
             }
         }

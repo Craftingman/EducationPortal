@@ -11,6 +11,7 @@ using Core.ViewModels;
 using DAL.Abstractions;
 using EFCore;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Logging;
 
 namespace BLL
 {
@@ -35,6 +36,8 @@ namespace BLL
         private readonly IUserValidator<User> _userValidator;
         
         private readonly IPasswordValidator<User> _passwordValidator;
+        
+        private readonly ILogger _logger;
 
         public UserService(
             UserManager<User> userManager, 
@@ -46,7 +49,8 @@ namespace BLL
             IRepositoryBase<Skill> skillRepository,
             IUserValidator<User> userValidator,
             IPasswordValidator<User> passwordValidator,
-            IMapper mapper)
+            IMapper mapper,
+            ILogger<UserService> logger)
         {
             _userManager = userManager;
             _roleManager = roleManager;
@@ -58,6 +62,7 @@ namespace BLL
             _userValidator = userValidator;
             _passwordValidator = passwordValidator;
             _mapper = mapper;
+            _logger = logger;
         }
 
         public async Task<ServiceResult> RegisterUserAsync(UserViewModel userShort, string password, string role)
@@ -82,6 +87,8 @@ namespace BLL
                 var addRoleResult = await _userManager.AddToRoleAsync(user, role);
                 if (createResult.Succeeded && addRoleResult.Succeeded)
                 {
+                    _logger.LogError($"Failed to create new user with E-mail {userShort.Email} and role {role}");
+                    
                     return ServiceResult.CreateSuccessResult();
                 }
 
@@ -93,6 +100,8 @@ namespace BLL
             }
             catch (Exception e)
             {
+                _logger.LogError(e.Message);
+
                 return ServiceResult.CreateFailure(e);
             }
         }
@@ -121,6 +130,8 @@ namespace BLL
             }
             catch (Exception e)
             {
+                _logger.LogError(e.Message);
+
                 return ServiceResult<UserViewModel>.CreateFailure(e);
             }
         }
@@ -131,6 +142,8 @@ namespace BLL
             {
                 if (userShort is null)
                 {
+                    _logger.LogError("User is null.");
+                    
                     return ServiceResult<bool>.CreateSuccessResult(false);
                 }
                 
@@ -139,6 +152,7 @@ namespace BLL
                 if (user is null)
                 {
                     string message = $"User with id {userShort.Id} doesn't exist.";
+                    _logger.LogError(message);
                     
                     return ServiceResult<bool>.CreateFailure(message, 404);
                 }
@@ -149,6 +163,8 @@ namespace BLL
             }
             catch (Exception e)
             {
+                _logger.LogError(e.Message);
+
                 return ServiceResult<bool>.CreateFailure(e);
             }
         }
@@ -165,6 +181,8 @@ namespace BLL
             }
             catch (Exception e)
             {
+                _logger.LogError(e.Message);
+
                 return ServiceResult<bool>.CreateFailure(e);
             }
         }
@@ -174,9 +192,10 @@ namespace BLL
             try
             {
                 var userResult = await _userRepository.FindAsync(userId);
-                
                 if (!userResult.Success)
                 {
+                    _logger.LogError(userResult.NonSuccessMessage); 
+                    
                     return ServiceResult.CreateFailure("Database error.");
                 }
 
@@ -185,6 +204,7 @@ namespace BLL
                 if (user is null)
                 {
                     string message = $"User with id {userId} doesn't exist.";
+                    _logger.LogError(message);
                     
                     return ServiceResult.CreateFailure(message, 404);
                 }
@@ -194,6 +214,7 @@ namespace BLL
                 if (userCourse is null)
                 {
                     string message = $"User with id {userId} does not have course with id {courseId}.";
+                    _logger.LogError(message);
                     
                     return ServiceResult.CreateFailure(message, 404);
                 }
@@ -204,6 +225,8 @@ namespace BLL
 
                     if (!result.Success)
                     {
+                        _logger.LogError(result.NonSuccessMessage); 
+                        
                         return ServiceResult.CreateFailure("Database error."); 
                     }
                 }
@@ -213,6 +236,8 @@ namespace BLL
                 var saveResult = await _userRepository.SaveAsync();
                 if (!saveResult.Success)
                 {
+                    _logger.LogError(saveResult.NonSuccessMessage); 
+                    
                     return ServiceResult.CreateFailure("Database error.");
                 }
 
@@ -220,6 +245,8 @@ namespace BLL
             }
             catch (Exception e)
             {
+                _logger.LogError(e.Message);
+
                 return ServiceResult.CreateFailure(e);
             }
         }
@@ -233,6 +260,8 @@ namespace BLL
                 
                 if (!userResult.Success || !materialResult.Success)
                 {
+                    _logger.LogError(String.Concat(userResult.NonSuccessMessage, materialResult.NonSuccessMessage)); 
+                    
                     return ServiceResult.CreateFailure("Database error.");
                 }
 
@@ -242,6 +271,7 @@ namespace BLL
                 if (user is null)
                 {
                     string message = $"User with id {userId} doesn't exist.";
+                    _logger.LogError(message);
                     
                     return ServiceResult.CreateFailure(message, 404);
                 }
@@ -249,6 +279,7 @@ namespace BLL
                 if (material is null)
                 {
                     string message = $"Material with id {materialId} doesn't exist.";
+                    _logger.LogError(message);
                     
                     return ServiceResult.CreateFailure(message, 404);
                 }
@@ -258,6 +289,8 @@ namespace BLL
                 var saveResult = await _userRepository.SaveAsync();
                 if (!saveResult.Success)
                 {
+                    _logger.LogError(saveResult.NonSuccessMessage); 
+                    
                     return ServiceResult.CreateFailure("Database error.");
                 }
                 
@@ -271,6 +304,8 @@ namespace BLL
             }
             catch (Exception e)
             {
+                _logger.LogError(e.Message);
+
                 return ServiceResult.CreateFailure(e);
             }
         }
@@ -284,6 +319,8 @@ namespace BLL
                 
                 if (!userResult.Success || !courseResult.Success)
                 {
+                    _logger.LogError(String.Concat(userResult.NonSuccessMessage, courseResult.NonSuccessMessage)); 
+                    
                     return ServiceResult.CreateFailure("Database error.");
                 }
 
@@ -293,6 +330,7 @@ namespace BLL
                 if (user is null)
                 {
                     string message = $"User with id {userId} doesn't exist.";
+                    _logger.LogError(message);
                     
                     return ServiceResult.CreateFailure(message, 404);
                 }
@@ -300,6 +338,7 @@ namespace BLL
                 if (course is null)
                 {
                     string message = $"Course with id {courseId} doesn't exist.";
+                    _logger.LogError(message);
                     
                     return ServiceResult.CreateFailure(message, 404);
                 }
@@ -309,6 +348,8 @@ namespace BLL
                 var saveResult = await _userRepository.SaveAsync();
                 if (!saveResult.Success)
                 {
+                    _logger.LogError(saveResult.NonSuccessMessage); 
+                    
                     return ServiceResult.CreateFailure("Database error.");
                 }
                 
@@ -322,6 +363,8 @@ namespace BLL
             }
             catch (Exception e)
             {
+                _logger.LogError(e.Message);
+
                 return ServiceResult.CreateFailure(e);
             }
         }
@@ -335,6 +378,8 @@ namespace BLL
                 
                 if (!userResult.Success || !skillResult.Success)
                 {
+                    _logger.LogError(String.Concat(userResult.NonSuccessMessage, skillResult.NonSuccessMessage));
+                    
                     return ServiceResult.CreateFailure("Database error.");
                 }
 
@@ -344,6 +389,7 @@ namespace BLL
                 if (user is null)
                 {
                     string message = $"User with id {userId} doesn't exist.";
+                    _logger.LogError(message);
                     
                     return ServiceResult.CreateFailure(message, 404);
                 }
@@ -351,6 +397,7 @@ namespace BLL
                 if (skill is null)
                 {
                     string message = $"Skill with id {skillId} doesn't exist.";
+                    _logger.LogError(message);
                     
                     return ServiceResult.CreateFailure(message, 404);
                 }
@@ -369,6 +416,8 @@ namespace BLL
                 var saveResult = await _userRepository.SaveAsync();
                 if (!saveResult.Success)
                 {
+                    _logger.LogError(saveResult.NonSuccessMessage); 
+                    
                     return ServiceResult.CreateFailure("Database error.");
                 }
 
@@ -376,6 +425,8 @@ namespace BLL
             }
             catch (Exception e)
             {
+                _logger.LogError(e.Message);
+
                 return ServiceResult.CreateFailure(e);
             }
         }
@@ -389,6 +440,8 @@ namespace BLL
                 
                 if (!userResult.Success || !courseResult.Success)
                 {
+                    _logger.LogError(String.Concat(userResult.NonSuccessMessage, courseResult.NonSuccessMessage));
+                    
                     return ServiceResult.CreateFailure("Database error.");
                 }
 
@@ -398,6 +451,7 @@ namespace BLL
                 if (user is null)
                 {
                     string message = $"User with id {userId} doesn't exist.";
+                    _logger.LogError(message);
                     
                     return ServiceResult.CreateFailure(message, 404);
                 }
@@ -405,6 +459,7 @@ namespace BLL
                 if (course is null)
                 {
                     string message = $"Course with id {userId} doesn't exist.";
+                    _logger.LogError(message);
                     
                     return ServiceResult.CreateFailure(message, 404);
                 }
@@ -414,6 +469,8 @@ namespace BLL
                 var saveResult = await _userRepository.SaveAsync();
                 if (!saveResult.Success)
                 {
+                    _logger.LogError(saveResult.NonSuccessMessage); 
+                    
                     return ServiceResult.CreateFailure("Database error.");
                 }
 
@@ -421,6 +478,8 @@ namespace BLL
             }
             catch (Exception e)
             {
+                _logger.LogError(e.Message);
+
                 return ServiceResult.CreateFailure(e);
             }
         }
@@ -433,6 +492,8 @@ namespace BLL
                 
                 if (!userResult.Success)
                 {
+                    _logger.LogError(userResult.NonSuccessMessage);
+                    
                     return ServiceResult.CreateFailure("Database error.");
                 }
 
@@ -441,6 +502,7 @@ namespace BLL
                 if (user is null)
                 {
                     string message = $"User with id {userId} doesn't exist.";
+                    _logger.LogError(message);
                     
                     return ServiceResult.CreateFailure(message, 404);
                 }
@@ -469,6 +531,8 @@ namespace BLL
                 var saveResult = await _userRepository.SaveAsync();
                 if (!saveResult.Success)
                 {
+                    _logger.LogError(saveResult.NonSuccessMessage);
+                    
                     return ServiceResult.CreateFailure("Database error.");
                 }
 
@@ -476,6 +540,8 @@ namespace BLL
             }
             catch (Exception e)
             {
+                _logger.LogError(e.Message);
+
                 return ServiceResult.CreateFailure(e);
             }
         }
@@ -488,6 +554,8 @@ namespace BLL
                 
                 if (!userResult.Success)
                 {
+                    _logger.LogError(userResult.NonSuccessMessage);
+                    
                     return ServiceResult.CreateFailure("Database error.");
                 }
 
@@ -496,6 +564,7 @@ namespace BLL
                 if (user is null)
                 {
                     string message = $"User with id {userId} doesn't exist.";
+                    _logger.LogError(message);
                     
                     return ServiceResult.CreateFailure(message, 404);
                 }
@@ -527,6 +596,8 @@ namespace BLL
                 var saveResult = await _userRepository.SaveAsync();
                 if (!saveResult.Success)
                 {
+                    _logger.LogError(saveResult.NonSuccessMessage);
+                    
                     return ServiceResult.CreateFailure("Database error.");
                 }
 
@@ -534,6 +605,8 @@ namespace BLL
             }
             catch (Exception e)
             {
+                _logger.LogError(e.Message);
+
                 return ServiceResult.CreateFailure(e);
             }
         }
@@ -546,6 +619,8 @@ namespace BLL
                 
                 if (!userResult.Success)
                 {
+                    _logger.LogError(userResult.NonSuccessMessage);
+                    
                     return ServiceResult.CreateFailure("Database error.");
                 }
 
@@ -554,6 +629,7 @@ namespace BLL
                 if (user is null)
                 {
                     string message = $"User with id {userId} doesn't exist.";
+                    _logger.LogError(message);
                     
                     return ServiceResult.CreateFailure(message, 404);
                 }
@@ -563,6 +639,7 @@ namespace BLL
                 if (userCourse is null)
                 {
                     string message = $"User with id {userId} doesn't have course with id {courseId}.";
+                    _logger.LogError(message);
                     
                     return ServiceResult.CreateFailure(message, 404);
                 }
@@ -586,6 +663,8 @@ namespace BLL
                 var saveResult = await _userRepository.SaveAsync();
                 if (!saveResult.Success)
                 {
+                    _logger.LogError(saveResult.NonSuccessMessage);
+                    
                     return ServiceResult.CreateFailure("Database error.");
                 }
 
@@ -593,6 +672,8 @@ namespace BLL
             }
             catch (Exception e)
             {
+                _logger.LogError(e.Message);
+
                 return ServiceResult.CreateFailure(e);
             }
         }
@@ -602,37 +683,38 @@ namespace BLL
         {
             try
             {
-                User user = await Task.Run(() => _userManager.Users.FirstOrDefault(u => u.Id == userId));
-            
+                var userResult = await _userRepository.FindAsync(userId);
+                
+                if (!userResult.Success)
+                {
+                    _logger.LogError(userResult.NonSuccessMessage);
+                    
+                    return ServiceResult<Dictionary<CourseViewModel, float>>.CreateFailure("Database error.");
+                }
+
+                User user = userResult.Result;
+
                 if (user is null)
                 {
                     string message = $"User with id {userId} doesn't exist.";
+                    _logger.LogError(message);
                     
-                    return ServiceResult<Dictionary<CourseViewModel, float>>
-                        .CreateFailure(message, 404);
+                    return ServiceResult<Dictionary<CourseViewModel, float>>.CreateFailure(message, 404);
                 }
 
                 Dictionary<CourseViewModel, float> dict = await Task.Run(() =>
                 {
-                    Dictionary<CourseViewModel, float> dict = new Dictionary<CourseViewModel, float>();
-
-                    IEnumerable<UserCourse> userCourses = user.UserCourses
-                        .Where(uc => uc.Course.Name.Contains(searcStr));
-                    
-                    foreach (var userCourse in userCourses)
-                    {
-                        CourseViewModel courseShort = _mapper.Map<CourseViewModel>(userCourse.Course);
-                        
-                        dict.Add(courseShort, userCourse.Progress);
-                    }
-
-                    return dict;
+                    return user.UserCourses.ToDictionary(
+                        uc => _mapper.Map<CourseViewModel>(uc.Course),
+                        uc => uc.Progress);
                 });
                 
                 return ServiceResult<Dictionary<CourseViewModel, float>>.CreateSuccessResult(dict);
             }
             catch (Exception e)
             {
+                _logger.LogError(e.Message);
+
                 return ServiceResult<Dictionary<CourseViewModel, float>>.CreateFailure(e);
             }
         }
@@ -646,6 +728,8 @@ namespace BLL
                 
                 if (!userResult.Success)
                 {
+                    _logger.LogError(userResult.NonSuccessMessage);
+                    
                     return ServiceResult<Dictionary<CourseViewModel, float>>.CreateFailure("Database error.");
                 }
 
@@ -654,7 +738,8 @@ namespace BLL
                 if (user is null)
                 {
                     string message = $"User with id {userId} doesn't exist.";
-                    
+                    _logger.LogError(message);
+
                     return ServiceResult<Dictionary<CourseViewModel, float>>.CreateFailure(message, 404);
                 }
                 
@@ -671,7 +756,46 @@ namespace BLL
             }
             catch (Exception e)
             {
+                _logger.LogError(e.Message);
+
                 return ServiceResult<Dictionary<CourseViewModel, float>>.CreateFailure(e);
+            }
+        }
+
+        public async Task<ServiceResult<Dictionary<SkillViewModel, int>>> GetUserSkills(int userId)
+        {
+            try
+            {
+                var userResult = await _userRepository.FindAsync(userId);
+                
+                if (!userResult.Success)
+                {
+                    _logger.LogError(userResult.NonSuccessMessage);
+                    
+                    return ServiceResult<Dictionary<SkillViewModel, int>>.CreateFailure("Database error.");
+                }
+
+                User user = userResult.Result;
+                
+                if (user is null)
+                {
+                    string message = $"User with id {userId} doesn't exist.";
+                    _logger.LogError(message);
+
+                    return ServiceResult<Dictionary<SkillViewModel, int>>.CreateFailure(message, 404);
+                }
+
+                Dictionary<SkillViewModel, int> result = user.UserSkills.ToDictionary(
+                    us => _mapper.Map<SkillViewModel>(us.Skill),
+                    us => us.Level);
+
+                return ServiceResult<Dictionary<SkillViewModel, int>>.CreateSuccessResult(result);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e.Message);
+
+                return ServiceResult<Dictionary<SkillViewModel, int>>.CreateFailure(e);
             }
         }
 
@@ -683,6 +807,8 @@ namespace BLL
                 
                 if (!userResult.Success)
                 {
+                    _logger.LogError(userResult.NonSuccessMessage);
+                    
                     return ServiceResult<ActiveCourseViewModel>.CreateFailure("Database error.");
                 }
 
@@ -691,7 +817,8 @@ namespace BLL
                 if (user is null)
                 {
                     string message = $"User with id {userId} doesn't exist.";
-                    
+                    _logger.LogError(message);
+
                     return ServiceResult<ActiveCourseViewModel>.CreateFailure(message, 404);
                 }
 
@@ -700,6 +827,7 @@ namespace BLL
                 if (userCourse is null)
                 {
                     string message = $"User with id {userId} doesn't have course with id {courseId}.";
+                    _logger.LogError(message);
                     
                     return ServiceResult<ActiveCourseViewModel>.CreateFailure(message, 404);
                 }
@@ -721,13 +849,15 @@ namespace BLL
                     Id = userCourse.Course.Id,
                     Name = userCourse.Course.Name,
                     Description = userCourse.Course.Description,
-                    CompletedMaterials = completedMaterials,
-                    UncompletedMaterials = uncompletedMaterials
+                    CompletedMaterials = completedMaterials.ToList(),
+                    UncompletedMaterials = uncompletedMaterials.ToList()
                 };
 
                 return ServiceResult<ActiveCourseViewModel>.CreateSuccessResult(activeCourse);
             } catch (Exception e)
             {
+                _logger.LogError(e.Message);
+
                 return ServiceResult<ActiveCourseViewModel>.CreateFailure(e);
             }
         }
@@ -742,18 +872,21 @@ namespace BLL
                 if (user is null)
                 {
                     string message = $"User with id {userId} doesn't exist.";
+                    _logger.LogError(message);
                     
                     return ServiceResult<IEnumerable<CourseViewModel>>
                         .CreateFailure(message, 404);
                 }
                 
                 IEnumerable<CourseViewModel> courses = _mapper.Map<IEnumerable<CourseViewModel>>(
-                    await Task.Run(() => user.CreatedCourses.Where(c => c.Name.Contains(searcStr))));
+                    await Task.Run(() => user.CreatedCourses.Where(c => c.Name.Contains(searcStr)).ToList()));
                 
                 return ServiceResult<IEnumerable<CourseViewModel>>.CreateSuccessResult(courses);
             }
             catch (Exception e)
             {
+                _logger.LogError(e.Message);
+
                 return ServiceResult<IEnumerable<CourseViewModel>>.CreateFailure(e);
             }
         }
@@ -768,6 +901,7 @@ namespace BLL
                 if (user is null)
                 {
                     string message = $"User with id {userId} doesn't exist.";
+                    _logger.LogError(message);
                     
                     return ServiceResult<IEnumerable<CourseViewModel>>
                         .CreateFailure(message, 404);
@@ -786,6 +920,8 @@ namespace BLL
             }
             catch (Exception e)
             {
+                _logger.LogError(e.Message);
+
                 return ServiceResult<IEnumerable<CourseViewModel>>.CreateFailure(e);
             }
         }

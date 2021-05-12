@@ -36,6 +36,8 @@ namespace BLL.Abstractions
         
         Task<ServiceResult<Dictionary<CourseViewModel, float>>> GetActiveCoursesAsync(int userId,  string searchStr);
 
+        Task<ServiceResult<Dictionary<SkillViewModel, int>>> GetUserSkills(int userId);
+
         Task<ServiceResult<ActiveCourseViewModel>> GetActiveCourseAsync(int userId, int courseId);
 
         Task<ServiceResult<IEnumerable<CourseViewModel>>> GetCreatedCoursesAsync(int userId,  string searchStr);
