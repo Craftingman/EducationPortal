@@ -8,24 +8,28 @@ namespace BLL.Abstractions
 {
     public interface ICourseService
     {
-        public Task<ServiceResult> CreateAsync(CourseViewModel courseShort, UserViewModel creator = null);
+        Task<ServiceResult> CreateAsync(CourseViewModel courseShort, UserViewModel creator = null);
 
-        public Task<ServiceResult> RemoveAsync(int courseId);
+        Task<ServiceResult> RemoveAsync(int courseId);
 
-        public Task<ServiceResult<IEnumerable<CourseViewModel>>> GetCoursesAsync(string searchStr);
+        Task<ServiceResult<IEnumerable<CourseViewModel>>> GetCoursesAsync(string searchStr);
 
-        public Task<ServiceResult<IEnumerable<SkillViewModel>>> GetCourseSkillsAsync(int courseId);
+        Task<ServiceResult<IEnumerable<SkillViewModel>>> GetCourseSkillsAsync(int courseId);
         
-        public Task<ServiceResult<IEnumerable<MaterialViewModel>>> GetCourseMaterialsAsync(int courseId);
+        Task<ServiceResult<IEnumerable<MaterialViewModel>>> GetCourseMaterialsAsync(int courseId);
 
-        public Task<ServiceResult> UpdateCourseInfoAsync(CourseViewModel courseShort);
+        Task<ServiceResult> UpdateCourseInfoAsync(CourseViewModel courseShort);
 
-        public Task<ServiceResult> AddMaterialAsync(int courseId, int materialId);
+        Task<ServiceResult> AddMaterialAsync(int courseId, int materialId);
         
-        public Task<ServiceResult> RemoveMaterialAsync(int courseId, int materialId);
+        Task<ServiceResult> RemoveMaterialAsync(int courseId, int materialId);
         
-        public Task<ServiceResult> AddSkillAsync(int courseId, int skillId);
+        Task<ServiceResult> AddSkillAsync(int courseId, int skillId);
         
-        public Task<ServiceResult> RemoveSkillAsync(int courseId, int skillId);
+        Task<ServiceResult> RemoveSkillAsync(int courseId, int skillId);
+
+        Task<ServiceResult<bool>> HasSkillAsync(int courseId, int skillId);
+        
+        Task<ServiceResult<bool>> HasMaterialAsync(int courseId, int materialId);
     }
 }

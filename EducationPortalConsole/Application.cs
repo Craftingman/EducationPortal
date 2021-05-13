@@ -394,7 +394,7 @@ namespace EducationPortalConsole
                         editCourseExitFlag = true;
                         break;
                     case 1:
-                        SkillViewModel skill = StartSkillMenu();
+                        SkillViewModel skill = StartSkillMenu(skills);
                         if (skill != null)
                         {
                             var result = _courseService.AddSkillAsync(course.Id, skill.Id);
@@ -428,7 +428,7 @@ namespace EducationPortalConsole
                         Thread.Sleep(800);
                         break;
                     case 3:
-                        MaterialViewModel material = StartMaterialMenu();
+                        MaterialViewModel material = StartMaterialMenu(materials);
                         if (material != null)
                         {
                            var result = _courseService.AddMaterialAsync(course.Id ,material.Id);
@@ -492,7 +492,7 @@ namespace EducationPortalConsole
             }
         }
 
-        private MaterialViewModel StartMaterialMenu()
+        private MaterialViewModel StartMaterialMenu(ICollection<MaterialViewModel> exceptMaterials)
         {
             bool materialMenuExitFlag = false;
             bool plug = false;
@@ -503,8 +503,18 @@ namespace EducationPortalConsole
                 Console.Clear();
                 Console.Clear();
                 Console.WriteLine("--- Материалы ---");
+                
+                var materialsResult = _materialService.GetMaterialsAsync(searchStr).Result;
+                if (!materialsResult.Success)
+                {
+                    StartErrorMenu("Неизвестная ошибка. Попробуйте позже", out materialMenuExitFlag);
+                    return null;
+                }
 
-                List<MaterialViewModel> materials = _materialService.GetMaterialsAsync(searchStr).Result.Result.ToList();
+                List<MaterialViewModel> materials = materialsResult.Result
+                    .Where(m => !exceptMaterials.Select(em => em.Id)
+                        .Contains(m.Id))
+                    .ToList();
                 
                 ShowMaterials(materials);
                 
@@ -548,7 +558,7 @@ namespace EducationPortalConsole
             return null;
         }
 
-        private SkillViewModel StartSkillMenu()
+        private SkillViewModel StartSkillMenu(ICollection<SkillViewModel> exceptSkills)
         {
             bool skillMenuExitFlag = false;
             bool plug = false;
@@ -560,7 +570,17 @@ namespace EducationPortalConsole
                 Console.Clear();
                 Console.WriteLine("--- Навыки ---");
 
-                List<SkillViewModel> skills = _skillService.GetSkillsAsync(searchStr).Result.Result.ToList();
+                var skillsResult = _skillService.GetSkillsAsync(searchStr).Result;
+                if (!skillsResult.Success)
+                {
+                    StartErrorMenu("Неизвестная ошибка. Попробуйте позже", out skillMenuExitFlag);
+                    return null;
+                }
+
+                List<SkillViewModel> skills = skillsResult.Result
+                    .Where(s => !exceptSkills.Select(es => es.Id)
+                        .Contains(s.Id))
+                    .ToList();
                 
                 ShowSkills(skills);
                 

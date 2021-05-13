@@ -326,6 +326,15 @@ namespace BLL
                     
                     return ServiceResult.CreateFailure($"Material with id {materialId} doesn't exist.");
                 }
+                
+                if ((await HasMaterialAsync(courseId, materialId)).Result)
+                {
+                    _logger.LogError(
+                        $"Attempt to double-add material with id {materialId} to course with id {courseId}.");
+                    
+                    return ServiceResult.CreateFailure(
+                        $"Attempt to double-add material with id {materialId} to course with id {courseId}.");
+                }
 
                 course.Materials.Add(material);
 
@@ -432,6 +441,15 @@ namespace BLL
                     
                     return ServiceResult.CreateFailure($"Skill with id {skillId} doesn't exist.");
                 }
+                
+                if ((await HasSkillAsync(courseId, skillId)).Result)
+                {
+                    _logger.LogError(
+                        $"Attempt to double-add skill with id {skill} to course with id {courseId}.");
+                    
+                    return ServiceResult.CreateFailure(
+                        $"Attempt to double-add skill with id {skill} to course with id {courseId}.");
+                }
 
                 course.Skills.Add(skill);
 
@@ -505,6 +523,53 @@ namespace BLL
 
                 return ServiceResult.CreateFailure(e);
             }
+        }
+
+        public async Task<ServiceResult<bool>> HasSkillAsync(int courseId, int skillId)
+        {
+            var result = await _courseRepository.FindAsync(courseId);
+            
+            if (!result.Success)
+            {
+                _logger.LogError(result.NonSuccessMessage);
+                    
+                return ServiceResult<bool>.CreateFailure("Database error.");
+            }
+
+            Course course = result.Result;
+                
+            if (course is null)
+            {
+                _logger.LogError($"Course with id {courseId} doesn't exist.");
+                    
+                return ServiceResult<bool>.CreateFailure($"Course with id {courseId} doesn't exist.");
+            }
+
+            return ServiceResult<bool>.CreateSuccessResult(course.Skills.Select(s => s.Id).Contains(skillId));
+        }
+
+        public async Task<ServiceResult<bool>> HasMaterialAsync(int courseId, int materialId)
+        {
+            var result = await _courseRepository.FindAsync(courseId);
+            
+            if (!result.Success)
+            {
+                _logger.LogError(result.NonSuccessMessage);
+                    
+                return ServiceResult<bool>.CreateFailure("Database error.");
+            }
+
+            Course course = result.Result;
+                
+            if (course is null)
+            {
+                _logger.LogError($"Course with id {courseId} doesn't exist.");
+                    
+                return ServiceResult<bool>.CreateFailure($"Course with id {courseId} doesn't exist.");
+            }
+
+            return ServiceResult<bool>
+                .CreateSuccessResult(course.Materials.Select(m => m.Id).Contains(materialId));
         }
     }
 }
