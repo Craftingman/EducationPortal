@@ -214,6 +214,7 @@ namespace EducationPortalConsole
                 if (!ShowCourseInfo(course))
                 {
                     StartErrorMenu("Произошла ошибка", out exitCourseInfoMenuFlag);
+                    break;
                 }
                 
                 if (_currentUser != null)
@@ -508,7 +509,7 @@ namespace EducationPortalConsole
                 if (!materialsResult.Success)
                 {
                     StartErrorMenu("Неизвестная ошибка. Попробуйте позже", out materialMenuExitFlag);
-                    return null;
+                    break;
                 }
 
                 List<MaterialViewModel> materials = materialsResult.Result
@@ -935,6 +936,7 @@ namespace EducationPortalConsole
             {
                 return;
             }
+            
             Console.WriteLine();
             int i = 0;
             foreach (var material in materials)
@@ -951,6 +953,7 @@ namespace EducationPortalConsole
             {
                 return;
             }
+            
             Console.WriteLine();
             int i = 0;
             foreach (var skill in skills)
@@ -967,6 +970,7 @@ namespace EducationPortalConsole
             {
                 return;
             }
+            
             Console.WriteLine();
             int i = 0;
             foreach (var course in courses)
@@ -979,7 +983,7 @@ namespace EducationPortalConsole
 
         private void StartUsersMenu()
         {
-            
+            throw new NotImplementedException();
         }
 
         private void StartMainMenu()
@@ -1023,6 +1027,7 @@ namespace EducationPortalConsole
             }
         }
         
+        //TO DO
         private void StartAccountDataMenu()
         {
             
@@ -1034,6 +1039,7 @@ namespace EducationPortalConsole
             {
                 return;
             }
+            
             Console.WriteLine();
             int i = 0;
             foreach (var item in courses)
@@ -1048,7 +1054,9 @@ namespace EducationPortalConsole
             Console.WriteLine($"Название: {course.Name}\n");
             Console.WriteLine($"Описание: {course.Description}\n");
             Console.WriteLine($"Непройденные материалы: ");
+            
             ShowMaterials(course.UncompletedMaterials);
+            
             Console.WriteLine($"Пройденные материалы: \n");
             foreach (var material in course.CompletedMaterials)
             {
@@ -1296,7 +1304,7 @@ namespace EducationPortalConsole
                     break;
                 }
                 
-                IEnumerable<CourseViewModel> completedCourses = coursesResult.Result;
+                List<CourseViewModel> completedCourses = coursesResult.Result.ToList();
 
                 ShowCourses(completedCourses);
                 
@@ -1567,7 +1575,6 @@ namespace EducationPortalConsole
                 string password = Console.ReadLine();
 
                 var result = _userService.SignInUserAsync(email, password).Result;
-
                 if (result.Success)
                 {
                     _currentUser = result.Result;
